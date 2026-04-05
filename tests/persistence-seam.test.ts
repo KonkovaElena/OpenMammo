@@ -109,6 +109,8 @@ test("GET /api/v1/cases/:caseId returns the persisted case after a bootstrap res
     assert.equal(readResponse.body.status, "AwaitingReview");
     assert.equal(readResponse.body.assessment.outputMode, "draft-only");
     assert.equal(readResponse.body.qc.status, "pass");
+    assert.equal(readResponse.body.generation.orchestratorId, "baseline-draft-orchestrator:v1");
+    assert.equal(readResponse.body.generation.modelId, "baseline-rule-engine:v0");
     assert.equal(readResponse.body.safety.hasBlockingFlags, false);
 
     const missingResponse = await request(secondBootstrap.app)
@@ -147,6 +149,7 @@ test("GET /api/v1/cases/:caseId returns submitted cases without forcing a 500", 
     assert.equal(response.body.status, "Submitted");
     assert.equal(response.body.assessment, null);
     assert.equal(response.body.qc, null);
+    assert.equal(response.body.generation, null);
     assert.equal(response.body.safety.flagCount, 0);
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
@@ -185,7 +188,7 @@ test("GET /api/v1/cases/:caseId/events returns persisted lifecycle events after 
 
     assert.equal(response.status, 200);
     assert.equal(response.body.caseId, createResponse.body.caseId);
-    assert.equal(response.body.count, 4);
+    assert.equal(response.body.count, 5);
     assert.deepEqual(
       response.body.events.map((event: { type: string }) => event.type),
       [
@@ -193,11 +196,15 @@ test("GET /api/v1/cases/:caseId/events returns persisted lifecycle events after 
         "mammography.exam-qc-evaluated.v1",
         "mammography.draft-generated.v1",
         "mammography.safety-flags-applied.v1",
+        "mammography.draft-orchestration-completed.v1",
       ],
     );
     assert.equal(response.body.events[1].payload.status, "pass");
     assert.equal(response.body.events[1].payload.findingCount, 0);
     assert.equal(response.body.events[3].payload.flagCount, 0);
+    assert.equal(response.body.events[4].payload.orchestratorId, "baseline-draft-orchestrator:v1");
+    assert.equal(response.body.events[4].payload.modelId, "baseline-rule-engine:v0");
+    assert.equal(response.body.events[4].payload.stages.length, 3);
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
   }

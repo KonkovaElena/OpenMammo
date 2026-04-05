@@ -33,7 +33,7 @@ Current status:
 
 - Python imaging sidecar: not started
 - exam consistency and QC: implemented as persisted QC summaries and `mammography.exam-qc-evaluated.v1` lifecycle events
-- initial draft-generation orchestration: baseline rule-engine only
+- initial draft-generation orchestration: implemented as persisted stage summaries and `mammography.draft-orchestration-completed.v1` lifecycle events
 
 ## Wave 4
 

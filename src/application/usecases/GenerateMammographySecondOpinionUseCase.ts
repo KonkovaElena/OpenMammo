@@ -25,6 +25,16 @@ export interface MammographySecondOpinionCaseResponse {
       description: string;
     }>;
   } | null;
+  generation: {
+    orchestratorId: string;
+    modelId: string;
+    totalLatencyMs: number;
+    stages: Array<{
+      name: "exam-qc" | "draft-generation" | "safety-evaluation";
+      status: "completed";
+      latencyMs: number;
+    }>;
+  } | null;
   safety: {
     flagCount: number;
     hasBlockingFlags: boolean;
@@ -45,7 +55,9 @@ export class GenerateMammographySecondOpinionUseCase {
     input: CreateMammographyCaseRequest,
   ): Promise<GenerateMammographySecondOpinionOutput> {
     const mammographyCase = MammographySecondOpinionCase.submit(input.exam, input.clinicalQuestion);
+    const qcStartedAt = Date.now();
     const qcResult = await this.examQualityPolicy.evaluate(input.exam);
+    const qcLatencyMs = Date.now() - qcStartedAt;
 
     mammographyCase.applyExamQuality(qcResult.summary);
 
@@ -57,13 +69,37 @@ export class GenerateMammographySecondOpinionUseCase {
       inferenceResult.latencyMs,
     );
 
+    const safetyStartedAt = Date.now();
     const safetyResult = await this.safetyPolicy.evaluate(
       inferenceResult.assessment,
       input.exam,
       input.clinicalQuestion,
     );
+    const safetyLatencyMs = Date.now() - safetyStartedAt;
 
     mammographyCase.applySafetyFlags(safetyResult.flags);
+    mammographyCase.completeDraftOrchestration({
+      orchestratorId: "baseline-draft-orchestrator:v1",
+      modelId: inferenceResult.modelId,
+      totalLatencyMs: qcLatencyMs + inferenceResult.latencyMs + safetyLatencyMs,
+      stages: [
+        {
+          name: "exam-qc",
+          status: "completed",
+          latencyMs: qcLatencyMs,
+        },
+        {
+          name: "draft-generation",
+          status: "completed",
+          latencyMs: inferenceResult.latencyMs,
+        },
+        {
+          name: "safety-evaluation",
+          status: "completed",
+          latencyMs: safetyLatencyMs,
+        },
+      ],
+    });
     await this.repository.save(mammographyCase);
 
     return mapMammographySecondOpinionCaseToResponse(mammographyCase);
@@ -89,6 +125,14 @@ export function mapMammographySecondOpinionCaseToResponse(
           status: caseAggregate.qc.status,
           findingCount: caseAggregate.qc.findingCount,
           findings: [...caseAggregate.qc.findings],
+        }
+      : null,
+    generation: caseAggregate.generation
+      ? {
+          orchestratorId: caseAggregate.generation.orchestratorId,
+          modelId: caseAggregate.generation.modelId,
+          totalLatencyMs: caseAggregate.generation.totalLatencyMs,
+          stages: [...caseAggregate.generation.stages],
         }
       : null,
     safety: {

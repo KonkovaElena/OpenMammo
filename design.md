@@ -44,10 +44,14 @@ Implemented in the first wave 3 slice:
 - rule-based exam consistency and QC summary for intake metadata completeness
 - persisted QC lifecycle event before draft generation
 
+Implemented in the second wave 3 slice:
+- persisted draft-generation orchestration summary with stage timings and model provenance
+- orchestration-completed lifecycle event after QC, draft generation, and safety evaluation
+
 Not implemented yet:
 - Python imaging sidecar
 - deeper image QC
-- deeper inference orchestration
+- deeper inference orchestration and multi-engine routing
 - radiologist review workflow
 - production-grade database-backed persistence
 - report export

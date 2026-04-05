@@ -49,6 +49,19 @@ export const mammographyExamQualitySummarySchema = z.object({
   findings: z.array(mammographyExamQualityFindingSchema),
 });
 
+export const mammographyDraftGenerationStageSchema = z.object({
+  name: z.enum(["exam-qc", "draft-generation", "safety-evaluation"]),
+  status: z.literal("completed"),
+  latencyMs: z.number().int().min(0),
+});
+
+export const mammographyDraftGenerationSummarySchema = z.object({
+  orchestratorId: z.string().min(1).max(128),
+  modelId: z.string().min(1).max(128),
+  totalLatencyMs: z.number().int().min(0),
+  stages: z.array(mammographyDraftGenerationStageSchema).min(1),
+});
+
 export const mammographyCaseStatusSchema = z.enum(["Submitted", "AwaitingReview"]);
 
 const mammographyCaseEventBaseSchema = z.object({
@@ -98,11 +111,17 @@ export const mammographyExamQcEvaluatedEventSchema = mammographyCaseEventBaseSch
   payload: mammographyExamQualitySummarySchema,
 });
 
+export const mammographyDraftOrchestrationCompletedEventSchema = mammographyCaseEventBaseSchema.extend({
+  type: z.literal("mammography.draft-orchestration-completed.v1"),
+  payload: mammographyDraftGenerationSummarySchema,
+});
+
 export const mammographyCaseLifecycleEventSchema = z.discriminatedUnion("type", [
   mammographyCaseSubmittedEventSchema,
   mammographyExamQcEvaluatedEventSchema,
   mammographyDraftGeneratedEventSchema,
   mammographySafetyFlagsAppliedEventSchema,
+  mammographyDraftOrchestrationCompletedEventSchema,
 ]);
 
 export const mammographySecondOpinionCaseSnapshotSchema = z.object({
@@ -114,6 +133,7 @@ export const mammographySecondOpinionCaseSnapshotSchema = z.object({
   modelId: z.string().min(1).max(128).nullable(),
   latencyMs: z.number().int().min(0).nullable(),
   qc: mammographyExamQualitySummarySchema.nullable().default(null),
+  generation: mammographyDraftGenerationSummarySchema.nullable().default(null),
   safetyFlags: z.array(mammographySafetyFlagSchema),
   events: z.array(mammographyCaseLifecycleEventSchema).default([]),
 });
@@ -126,6 +146,8 @@ export const createMammographyCaseRequestSchema = z.object({
 export type MammographyExam = z.infer<typeof mammographyExamSchema>;
 export type MammographyClinicalQuestion = z.infer<typeof mammographyClinicalQuestionSchema>;
 export type MammographyDraftAssessment = z.infer<typeof mammographyDraftAssessmentSchema>;
+export type MammographyDraftGenerationStage = z.infer<typeof mammographyDraftGenerationStageSchema>;
+export type MammographyDraftGenerationSummary = z.infer<typeof mammographyDraftGenerationSummarySchema>;
 export type MammographyExamQualityFinding = z.infer<typeof mammographyExamQualityFindingSchema>;
 export type MammographyExamQualitySummary = z.infer<typeof mammographyExamQualitySummarySchema>;
 export type MammographySafetyFlag = z.infer<typeof mammographySafetyFlagSchema>;

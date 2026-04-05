@@ -33,6 +33,15 @@ test("POST /api/v1/cases creates a draft mammography second-opinion case", async
   assert.equal(response.body.assessment.outputMode, "draft-only");
   assert.equal(response.body.qc.status, "pass");
   assert.equal(response.body.qc.findingCount, 0);
+  assert.equal(response.body.generation.orchestratorId, "baseline-draft-orchestrator:v1");
+  assert.equal(response.body.generation.modelId, "baseline-rule-engine:v0");
+  assert.deepEqual(
+    response.body.generation.stages.map((stage: { name: string }) => stage.name),
+    ["exam-qc", "draft-generation", "safety-evaluation"],
+  );
+  assert.equal(response.body.generation.stages.length, 3);
+  assert.equal(typeof response.body.generation.totalLatencyMs, "number");
+  assert.ok(response.body.generation.totalLatencyMs >= 0);
   assert.equal(response.body.safety.hasBlockingFlags, false);
 });
 
@@ -91,5 +100,7 @@ test("POST /api/v1/cases returns QC warnings when optional intake metadata is ab
       "MISSING_BREAST_DENSITY",
     ],
   );
+  assert.equal(response.body.generation.orchestratorId, "baseline-draft-orchestrator:v1");
+  assert.equal(response.body.generation.stages.length, 3);
   assert.equal(response.body.safety.hasBlockingFlags, false);
 });
