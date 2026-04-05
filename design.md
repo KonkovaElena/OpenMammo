@@ -60,11 +60,14 @@ Implemented in the second wave 4 slice:
 - deterministic report rendering route for finalized clinician-reviewed cases
 - report artifact response with text body, filename, and render timestamp
 
+Implemented in the third wave 4 slice:
+- delivery tracking route for finalized reports with persisted delivery metadata
+- case-delivered lifecycle event after delivery recording
+
 Not implemented yet:
 - deeper image QC
 - deeper inference orchestration and multi-engine routing
 - live Python imaging inference and Node-to-sidecar integration
-- delivery tracking
 - production-grade database-backed persistence
 - report export
 - archive integration

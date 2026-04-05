@@ -15,6 +15,7 @@ This standalone is intentionally narrow. The first implemented wave is a bootabl
 - persisted draft-generation orchestration summary with stage timings and model provenance
 - clinician review and finalization workflow with persisted reviewer decision
 - finalized report rendering route for clinician-approved cases
+- delivery tracking for finalized reports with persisted delivery metadata
 - separate Python imaging sidecar scaffold for future compute workloads
 - file-backed persistence seam for draft case retrieval
 - typed lifecycle event history for submitted, QC-evaluated, drafted, safety-evaluated, orchestrated, and finalized cases
@@ -89,10 +90,11 @@ The repository now includes a dedicated provenance workflow at `.github/workflow
 - POST /api/v1/cases
 - POST /api/v1/cases/:caseId/review
 - GET /api/v1/cases/:caseId/report
+- POST /api/v1/cases/:caseId/deliver
 - GET /api/v1/cases/:caseId
 - GET /api/v1/cases/:caseId/events
 
-`/readyz` returns product and runtime status. Retrieval can return `status="Submitted"` with `assessment=null`, `qc=null`, `generation=null`, and `review=null` for persisted cases that exist before QC, draft completion, or clinician finalization. Case responses now include QC, generation, and review summaries across the workflow. Finalized cases can also render a deterministic text report artifact via `/api/v1/cases/:caseId/report`. Error responses for case intake, case retrieval, case review finalization, case report rendering, and case event retrieval include request and correlation identifiers to simplify operator debugging.
+`/readyz` returns product and runtime status. Retrieval can return `status="Submitted"` with `assessment=null`, `qc=null`, `generation=null`, `review=null`, and `delivery=null` for persisted cases that exist before QC, draft completion, clinician finalization, or tracked delivery. Case responses now include QC, generation, review, and delivery summaries across the workflow. Finalized cases can also render a deterministic text report artifact via `/api/v1/cases/:caseId/report`. Error responses for case intake, case retrieval, case review finalization, case report rendering, case delivery tracking, and case event retrieval include request and correlation identifiers to simplify operator debugging.
 
 ## Python Sidecar Scaffold
 

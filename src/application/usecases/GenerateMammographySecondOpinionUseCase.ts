@@ -1,4 +1,5 @@
 import type {
+  MammographyCaseDeliverySummary,
   CreateMammographyCaseRequest,
   MammographyCaseReviewSummary,
 } from "../../domain/mammography/contracts";
@@ -39,6 +40,7 @@ export interface MammographySecondOpinionCaseResponse {
     }>;
   } | null;
   review: MammographyCaseReviewSummary | null;
+  delivery: MammographyCaseDeliverySummary | null;
   safety: {
     flagCount: number;
     hasBlockingFlags: boolean;
@@ -140,6 +142,7 @@ export function mapMammographySecondOpinionCaseToResponse(
         }
       : null,
     review: caseAggregate.review,
+    delivery: caseAggregate.delivery,
     safety: {
       flagCount: caseAggregate.safetyFlags.length,
       hasBlockingFlags: caseAggregate.hasBlockingFlags,

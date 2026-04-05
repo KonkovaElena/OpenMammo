@@ -45,7 +45,7 @@ Current status:
 
 - radiologist review and finalization workflow: implemented as persisted clinician review summaries and `mammography.case-review-finalized.v1` lifecycle events
 - report rendering: implemented as deterministic finalized case reports via `GET /api/v1/cases/:caseId/report`
-- delivery tracking: not started
+- delivery tracking: implemented as persisted delivery metadata and `mammography.case-delivered.v1` lifecycle events
 
 ## Wave 5
 

@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type {
+  MammographyCaseDeliveryInput,
+  MammographyCaseDeliverySummary,
   MammographyCaseLifecycleEvent,
   MammographyCaseReviewInput,
   MammographyCaseReviewSummary,
@@ -25,6 +27,7 @@ export class MammographySecondOpinionCase {
   private _qc: MammographyExamQualitySummary | null;
   private _generation: MammographyDraftGenerationSummary | null;
   private _review: MammographyCaseReviewSummary | null;
+  private _delivery: MammographyCaseDeliverySummary | null;
   private _safetyFlags: MammographySafetyFlag[];
   private _events: MammographyCaseLifecycleEvent[];
 
@@ -37,6 +40,7 @@ export class MammographySecondOpinionCase {
     this._qc = snapshot.qc;
     this._generation = snapshot.generation;
     this._review = snapshot.review;
+    this._delivery = snapshot.delivery;
     this._safetyFlags = snapshot.safetyFlags;
     this._events = snapshot.events;
     this._exam = snapshot.exam;
@@ -60,6 +64,7 @@ export class MammographySecondOpinionCase {
       qc: null,
       generation: null,
       review: null,
+      delivery: null,
       safetyFlags: [],
       events: [createCaseSubmittedEvent(caseId, exam, clinicalQuestion)],
     });
@@ -126,6 +131,27 @@ export class MammographySecondOpinionCase {
     ];
   }
 
+  recordDelivery(input: MammographyCaseDeliveryInput): void {
+    if (this._status !== "Finalized" || !this._review) {
+      throw new Error(`Cannot record delivery in state '${this._status}'.`);
+    }
+
+    if (this._delivery) {
+      throw new Error(`Delivery already recorded for case '${this._caseId}'.`);
+    }
+
+    const deliverySummary: MammographyCaseDeliverySummary = {
+      ...input,
+      deliveredAt: new Date().toISOString(),
+    };
+
+    this._delivery = deliverySummary;
+    this._events = [
+      ...this._events,
+      createCaseDeliveredEvent(this._caseId, deliverySummary),
+    ];
+  }
+
   get caseId(): string {
     return this._caseId;
   }
@@ -158,6 +184,10 @@ export class MammographySecondOpinionCase {
     return this._review;
   }
 
+  get delivery(): MammographyCaseDeliverySummary | null {
+    return this._delivery;
+  }
+
   get safetyFlags(): readonly MammographySafetyFlag[] {
     return this._safetyFlags;
   }
@@ -182,6 +212,7 @@ export class MammographySecondOpinionCase {
       qc: this._qc,
       generation: this._generation,
       review: this._review,
+      delivery: this._delivery,
       safetyFlags: this._safetyFlags,
       events: this._events,
     };
@@ -265,6 +296,19 @@ function createCaseReviewFinalizedEvent(
     occurredAt: new Date().toISOString(),
     type: "mammography.case-review-finalized.v1",
     payload: reviewSummary,
+  };
+}
+
+function createCaseDeliveredEvent(
+  caseId: string,
+  deliverySummary: MammographyCaseDeliverySummary,
+): MammographyCaseLifecycleEvent {
+  return {
+    eventId: randomUUID(),
+    caseId,
+    occurredAt: new Date().toISOString(),
+    type: "mammography.case-delivered.v1",
+    payload: deliverySummary,
   };
 }
 

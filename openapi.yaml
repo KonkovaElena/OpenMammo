@@ -162,6 +162,22 @@ components:
         finalizedAt:
           type: string
           format: date-time
+    CaseDelivery:
+      type: object
+      required: [channel, destination, recipientName, deliveredBy, deliveredAt]
+      properties:
+        channel:
+          type: string
+          enum: [ehr, secure-email, worklist]
+        destination:
+          type: string
+        recipientName:
+          type: string
+        deliveredBy:
+          type: string
+        deliveredAt:
+          type: string
+          format: date-time
     RenderedReport:
       type: object
       required: [format, filename, renderedAt, body]
@@ -302,6 +318,24 @@ components:
           const: mammography.case-review-finalized.v1
         payload:
           $ref: '#/components/schemas/CaseReview'
+    MammographyCaseDeliveredEvent:
+      type: object
+      required: [eventId, caseId, occurredAt, type, payload]
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        caseId:
+          type: string
+          format: uuid
+        occurredAt:
+          type: string
+          format: date-time
+        type:
+          type: string
+          const: mammography.case-delivered.v1
+        payload:
+          $ref: '#/components/schemas/CaseDelivery'
     MammographySafetyFlagsAppliedEvent:
       type: object
       required: [eventId, caseId, occurredAt, type, payload]
@@ -349,9 +383,10 @@ components:
         - $ref: '#/components/schemas/MammographySafetyFlagsAppliedEvent'
         - $ref: '#/components/schemas/MammographyDraftOrchestrationCompletedEvent'
         - $ref: '#/components/schemas/MammographyCaseReviewFinalizedEvent'
+        - $ref: '#/components/schemas/MammographyCaseDeliveredEvent'
     CaseResponse:
       type: object
-      required: [caseId, status, assessment, qc, generation, review, safety]
+      required: [caseId, status, assessment, qc, generation, review, delivery, safety]
       properties:
         caseId:
           type: string
@@ -374,6 +409,10 @@ components:
         review:
           anyOf:
             - $ref: '#/components/schemas/CaseReview'
+            - type: 'null'
+        delivery:
+          anyOf:
+            - $ref: '#/components/schemas/CaseDelivery'
             - type: 'null'
         safety:
           $ref: '#/components/schemas/CaseSafety'
@@ -557,6 +596,64 @@ paths:
                 $ref: '#/components/schemas/ErrorEnvelope'
         '500':
           description: Unexpected server-side failure during report rendering
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/cases/{caseId}/deliver:
+    post:
+      operationId: deliverCaseReport
+      parameters:
+        - name: caseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [channel, destination, recipientName, deliveredBy]
+              properties:
+                channel:
+                  type: string
+                  enum: [ehr, secure-email, worklist]
+                destination:
+                  type: string
+                recipientName:
+                  type: string
+                deliveredBy:
+                  type: string
+      responses:
+        '200':
+          description: Finalized case delivery tracked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseResponse'
+        '400':
+          description: Invalid delivery body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: Case not found in the configured persistence store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: Case delivery cannot be recorded from the current workflow state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: Unexpected server-side failure during delivery tracking
           content:
             application/json:
               schema:

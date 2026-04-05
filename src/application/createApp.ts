@@ -7,10 +7,13 @@ import { standaloneManifest } from "../domain/manifest";
 import type { StructuredLogger } from "../logging";
 import {
   createMammographyCaseRequestSchema,
+  mammographyCaseDeliveryInputSchema,
   mammographyCaseReviewInputSchema,
   type CreateMammographyCaseRequest,
+  type MammographyCaseDeliveryInput,
   type MammographyCaseReviewInput,
 } from "../domain/mammography/contracts";
+import { MammographyCaseDeliveryConflictError } from "./usecases/DeliverMammographyCaseReportUseCase";
 import { MammographyCaseReviewConflictError } from "./usecases/FinalizeMammographySecondOpinionReviewUseCase";
 import { MammographyCaseReportNotReadyError, type MammographyRenderedReportResponse } from "./usecases/RenderMammographyCaseReportUseCase";
 import type {
@@ -47,6 +50,10 @@ export interface CreateAppOptions {
     reviewInput: MammographyCaseReviewInput,
   ) => Promise<MammographySecondOpinionCaseResponse | null>;
   renderCaseReport: (caseId: string) => Promise<MammographyRenderedReportResponse | null>;
+  deliverCaseReport: (
+    caseId: string,
+    deliveryInput: MammographyCaseDeliveryInput,
+  ) => Promise<MammographySecondOpinionCaseResponse | null>;
 }
 
 export function createApp(options: CreateAppOptions): Express {
@@ -234,6 +241,59 @@ export function createApp(options: CreateAppOptions): Express {
           request,
           "INTERNAL_ERROR",
           "Case report rendering failed unexpectedly.",
+        ),
+      );
+    }
+  });
+
+  app.post("/api/v1/cases/:caseId/deliver", async (request: Request, response: Response) => {
+    try {
+      const caseId = getSingleRouteParam(request.params.caseId);
+      const deliveryInput = mammographyCaseDeliveryInputSchema.parse(request.body);
+      const output = await options.deliverCaseReport(caseId, deliveryInput);
+
+      if (!output) {
+        response.status(404).json(
+          buildErrorEnvelope(
+            request,
+            "CASE_NOT_FOUND",
+            `Mammography case '${caseId}' was not found.`,
+          ),
+        );
+        return;
+      }
+
+      response.status(200).json(output);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        response.status(400).json(
+          buildErrorEnvelope(
+            request,
+            "INVALID_REQUEST_BODY",
+            "Delivery body does not match the delivery tracking contract.",
+            { issues: error.issues },
+          ),
+        );
+        return;
+      }
+
+      if (error instanceof MammographyCaseDeliveryConflictError) {
+        response.status(409).json(
+          buildErrorEnvelope(
+            request,
+            "CASE_DELIVERY_CONFLICT",
+            error.message,
+          ),
+        );
+        return;
+      }
+
+      logRequestFailure(request, options.logger, error);
+      response.status(500).json(
+        buildErrorEnvelope(
+          request,
+          "INTERNAL_ERROR",
+          "Case delivery tracking failed unexpectedly.",
         ),
       );
     }
