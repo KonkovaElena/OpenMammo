@@ -68,11 +68,14 @@ Implemented in the first wave 5 slice:
 - OHIF-compatible review seam route with a truthful launch manifest for `StudyInstanceUIDs`
 - DICOMweb-style datasource placeholders marked not-ready until archive wiring exists
 
+Implemented in the second wave 5 slice:
+- Orthanc and DICOMweb-compatible archive seam route with env-backed DICOMweb and WADO-URI roots
+- OHIF seam upgrade from placeholder datasource roots to configured archive roots when `ORTHANC_BASE_URL` is present
+
 Not implemented yet:
 - deeper image QC
 - deeper inference orchestration and multi-engine routing
 - live Python imaging inference and Node-to-sidecar integration
-- Orthanc and DICOMweb-compatible archive seam
 - production-grade database-backed persistence
 - report export
 - archive integration

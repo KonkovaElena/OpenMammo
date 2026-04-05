@@ -15,6 +15,7 @@ import {
 } from "../domain/mammography/contracts";
 import { MammographyCaseDeliveryConflictError } from "./usecases/DeliverMammographyCaseReportUseCase";
 import { MammographyCaseReviewConflictError } from "./usecases/FinalizeMammographySecondOpinionReviewUseCase";
+import type { MammographyDicomwebArchiveSeamResponse } from "./usecases/RenderDicomwebArchiveSeamUseCase";
 import type { MammographyOhifReviewSeamResponse } from "./usecases/RenderOhifReviewSeamUseCase";
 import { MammographyCaseReportNotReadyError, type MammographyRenderedReportResponse } from "./usecases/RenderMammographyCaseReportUseCase";
 import type {
@@ -56,6 +57,7 @@ export interface CreateAppOptions {
     deliveryInput: MammographyCaseDeliveryInput,
   ) => Promise<MammographySecondOpinionCaseResponse | null>;
   renderOhifReviewSeam: (caseId: string) => Promise<MammographyOhifReviewSeamResponse | null>;
+  renderDicomwebArchiveSeam: (caseId: string) => Promise<MammographyDicomwebArchiveSeamResponse | null>;
 }
 
 export function createApp(options: CreateAppOptions): Express {
@@ -232,6 +234,35 @@ export function createApp(options: CreateAppOptions): Express {
           request,
           "INTERNAL_ERROR",
           "OHIF review seam rendering failed unexpectedly.",
+        ),
+      );
+    }
+  });
+
+  app.get("/api/v1/cases/:caseId/archive-seams/dicomweb", async (request: Request, response: Response) => {
+    try {
+      const caseId = getSingleRouteParam(request.params.caseId);
+      const output = await options.renderDicomwebArchiveSeam(caseId);
+
+      if (!output) {
+        response.status(404).json(
+          buildErrorEnvelope(
+            request,
+            "CASE_NOT_FOUND",
+            `Mammography case '${caseId}' was not found.`,
+          ),
+        );
+        return;
+      }
+
+      response.status(200).json(output);
+    } catch (error) {
+      logRequestFailure(request, options.logger, error);
+      response.status(500).json(
+        buildErrorEnvelope(
+          request,
+          "INTERNAL_ERROR",
+          "DICOMweb archive seam rendering failed unexpectedly.",
         ),
       );
     }

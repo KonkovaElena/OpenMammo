@@ -3,11 +3,13 @@ import type { Express } from "express";
 import { createApp } from "./application/createApp";
 import { DeliverMammographyCaseReportUseCase } from "./application/usecases/DeliverMammographyCaseReportUseCase";
 import { FinalizeMammographySecondOpinionReviewUseCase } from "./application/usecases/FinalizeMammographySecondOpinionReviewUseCase";
+import { RenderDicomwebArchiveSeamUseCase } from "./application/usecases/RenderDicomwebArchiveSeamUseCase";
 import { RenderOhifReviewSeamUseCase } from "./application/usecases/RenderOhifReviewSeamUseCase";
 import { RenderMammographyCaseReportUseCase } from "./application/usecases/RenderMammographyCaseReportUseCase";
 import { GetMammographySecondOpinionCaseUseCase } from "./application/usecases/GetMammographySecondOpinionCaseUseCase";
 import { GetMammographySecondOpinionCaseEventsUseCase } from "./application/usecases/GetMammographySecondOpinionCaseEventsUseCase";
 import { GenerateMammographySecondOpinionUseCase } from "./application/usecases/GenerateMammographySecondOpinionUseCase";
+import { createDicomwebArchiveSeamConfig } from "./domain/archive/DicomwebArchiveSeamConfig";
 import { standaloneManifest, type StandaloneManifest } from "./domain/manifest";
 import { createStructuredLogger, type StructuredLogger } from "./logging";
 import { createMonitoring } from "./monitoring";
@@ -26,6 +28,8 @@ export interface BootstrapOptions {
   logger?: StructuredLogger;
   startedAt?: Date;
   caseStorePath?: string;
+  orthancBaseUrl?: string;
+  dicomwebSourceName?: string;
 }
 
 export interface BootstrapResult {
@@ -38,6 +42,10 @@ export function bootstrap(options: BootstrapOptions = {}): BootstrapResult {
   const { metricsRegistry, requestCounter } = createMonitoring();
   const logger = options.logger ?? createStructuredLogger();
   const startedAt = options.startedAt ?? new Date();
+  const archiveConfig = createDicomwebArchiveSeamConfig({
+    orthancBaseUrl: options.orthancBaseUrl,
+    sourceName: options.dicomwebSourceName,
+  });
 
   const repository = createCaseRepository(options.caseStorePath);
   const inferenceService = createBaselineInferenceService();
@@ -54,7 +62,8 @@ export function bootstrap(options: BootstrapOptions = {}): BootstrapResult {
   const finalizeReviewUseCase = new FinalizeMammographySecondOpinionReviewUseCase(repository);
   const renderReportUseCase = new RenderMammographyCaseReportUseCase(repository);
   const deliverReportUseCase = new DeliverMammographyCaseReportUseCase(repository);
-  const renderOhifReviewSeamUseCase = new RenderOhifReviewSeamUseCase(repository);
+  const renderOhifReviewSeamUseCase = new RenderOhifReviewSeamUseCase(repository, archiveConfig);
+  const renderDicomwebArchiveSeamUseCase = new RenderDicomwebArchiveSeamUseCase(repository, archiveConfig);
 
   const app = createApp({
     metricsEnabled: options.metricsEnabled ?? true,
@@ -70,6 +79,7 @@ export function bootstrap(options: BootstrapOptions = {}): BootstrapResult {
     renderCaseReport: (caseId) => renderReportUseCase.execute(caseId),
     deliverCaseReport: (caseId, deliveryInput) => deliverReportUseCase.execute(caseId, deliveryInput),
     renderOhifReviewSeam: (caseId) => renderOhifReviewSeamUseCase.execute(caseId),
+    renderDicomwebArchiveSeam: (caseId) => renderDicomwebArchiveSeamUseCase.execute(caseId),
   });
 
   return {

@@ -55,7 +55,7 @@ Current status:
 Current status:
 
 - OHIF-compatible review seam: implemented as a read-only OHIF launch manifest using `StudyInstanceUIDs` and DICOMweb-style datasource placeholders
-- Orthanc and DICOMweb-compatible archive seam: not started
+- Orthanc and DICOMweb-compatible archive seam: implemented as an env-backed handoff manifest that derives `dicom-web` and `wado` roots from `ORTHANC_BASE_URL`
 
 ## Validation Boundary
 

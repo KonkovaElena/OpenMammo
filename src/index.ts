@@ -9,6 +9,8 @@ const { app } = bootstrap({
   metricsEnabled: config.METRICS_ENABLED,
   isShuttingDown: () => shuttingDown,
   caseStorePath: config.CASE_STORE_PATH,
+  orthancBaseUrl: config.ORTHANC_BASE_URL,
+  dicomwebSourceName: config.DICOMWEB_SOURCE_NAME,
 });
 
 const server = app.listen(config.PORT, config.HOST, () => {

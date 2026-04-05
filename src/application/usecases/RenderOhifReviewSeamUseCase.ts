@@ -1,3 +1,4 @@
+import type { DicomwebArchiveSeamConfig } from "../../domain/archive/DicomwebArchiveSeamConfig";
 import type { IMammographySecondOpinionCaseRepository } from "../../domain/mammography/ports";
 
 export interface MammographyOhifReviewSeamResponse {
@@ -12,11 +13,11 @@ export interface MammographyOhifReviewSeamResponse {
   };
   dataSource: {
     namespace: "dicomweb";
-    sourceName: "dicomweb";
-    qidoRoot: null;
-    wadoRoot: null;
-    wadoUriRoot: null;
-    ready: false;
+    sourceName: string;
+    qidoRoot: string | null;
+    wadoRoot: string | null;
+    wadoUriRoot: string | null;
+    ready: boolean;
   };
   workflow: {
     caseStatus: string;
@@ -27,6 +28,7 @@ export interface MammographyOhifReviewSeamResponse {
 export class RenderOhifReviewSeamUseCase {
   constructor(
     private readonly repository: IMammographySecondOpinionCaseRepository,
+    private readonly archiveConfig: DicomwebArchiveSeamConfig,
   ) {}
 
   async execute(caseId: string): Promise<MammographyOhifReviewSeamResponse | null> {
@@ -48,11 +50,11 @@ export class RenderOhifReviewSeamUseCase {
       },
       dataSource: {
         namespace: "dicomweb",
-        sourceName: "dicomweb",
-        qidoRoot: null,
-        wadoRoot: null,
-        wadoUriRoot: null,
-        ready: false,
+        sourceName: this.archiveConfig.sourceName,
+        qidoRoot: this.archiveConfig.qidoRoot,
+        wadoRoot: this.archiveConfig.wadoRoot,
+        wadoUriRoot: this.archiveConfig.wadoUriRoot,
+        ready: this.archiveConfig.ready,
       },
       workflow: {
         caseStatus: caseAggregate.status,

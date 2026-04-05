@@ -15,3 +15,13 @@ test("loadConfig allows HOST override", () => {
   assert.equal(config.HOST, "127.0.0.1");
   assert.equal(config.PORT, 4090);
 });
+
+test("loadConfig exposes optional Orthanc base URL and DICOMweb source name", () => {
+  const config = loadConfig({
+    ORTHANC_BASE_URL: "http://localhost:8042/",
+    DICOMWEB_SOURCE_NAME: "orthanc",
+  });
+
+  assert.equal(config.ORTHANC_BASE_URL, "http://localhost:8042/");
+  assert.equal(config.DICOMWEB_SOURCE_NAME, "orthanc");
+});

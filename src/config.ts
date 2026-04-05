@@ -13,6 +13,8 @@ const envSchema = z.object({
   HOST: z.string().min(1).default("0.0.0.0"),
   PORT: z.coerce.number().int().positive().default(4030),
   CASE_STORE_PATH: z.string().min(1).default(defaultCaseStorePath),
+  ORTHANC_BASE_URL: z.string().url().optional(),
+  DICOMWEB_SOURCE_NAME: z.string().min(1).default("dicomweb"),
   METRICS_ENABLED: z
     .string()
     .optional()

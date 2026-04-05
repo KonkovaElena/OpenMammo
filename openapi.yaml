@@ -465,16 +465,20 @@ components:
               const: dicomweb
             sourceName:
               type: string
-              const: dicomweb
             qidoRoot:
-              type: 'null'
+              anyOf:
+                - type: string
+                - type: 'null'
             wadoRoot:
-              type: 'null'
+              anyOf:
+                - type: string
+                - type: 'null'
             wadoUriRoot:
-              type: 'null'
+              anyOf:
+                - type: string
+                - type: 'null'
             ready:
               type: boolean
-              const: false
         workflow:
           type: object
           required: [caseStatus, reviewReady]
@@ -482,6 +486,61 @@ components:
             caseStatus:
               type: string
               enum: [Submitted, AwaitingReview, Finalized]
+            reviewReady:
+              type: boolean
+    DicomwebArchiveSeamResponse:
+      type: object
+      required: [caseId, study, archive, workflow]
+      properties:
+        caseId:
+          type: string
+          format: uuid
+        study:
+          type: object
+          required: [studyInstanceUid, accessionNumber, modality]
+          properties:
+            studyInstanceUid:
+              type: string
+            accessionNumber:
+              anyOf:
+                - type: string
+                - type: 'null'
+            modality:
+              type: string
+              const: MG
+        archive:
+          type: object
+          required: [vendor, sourceName, dicomwebRoot, qidoRoot, wadoRoot, wadoUriRoot, ready]
+          properties:
+            vendor:
+              type: string
+              const: Orthanc
+            sourceName:
+              type: string
+            qidoRoot:
+              anyOf:
+                - type: string
+                - type: 'null'
+            wadoRoot:
+              anyOf:
+                - type: string
+                - type: 'null'
+            wadoUriRoot:
+              anyOf:
+                - type: string
+                - type: 'null'
+            dicomwebRoot:
+              anyOf:
+                - type: string
+                - type: 'null'
+            ready:
+              type: boolean
+        workflow:
+          type: object
+          required: [ohifReviewSeamPath, reviewReady]
+          properties:
+            ohifReviewSeamPath:
+              type: string
             reviewReady:
               type: boolean
     CaseEventsResponse:
@@ -739,6 +798,35 @@ paths:
                 $ref: '#/components/schemas/ErrorEnvelope'
         '500':
           description: Unexpected server-side failure during OHIF seam rendering
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/cases/{caseId}/archive-seams/dicomweb:
+    get:
+      operationId: renderDicomwebArchiveSeam
+      parameters:
+        - name: caseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Orthanc-compatible DICOMweb archive handoff manifest for the case
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DicomwebArchiveSeamResponse'
+        '404':
+          description: Case not found in the configured persistence store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: Unexpected server-side failure during DICOMweb archive seam rendering
           content:
             application/json:
               schema:
