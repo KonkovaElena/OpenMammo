@@ -30,7 +30,7 @@ Date: 2026-04-05
 - `src/application/createApp.ts`
   - creates the Express app
   - sets correlation headers
-  - exposes `/healthz`, `/readyz`, `/metrics`, `/api/v1/manifest`, `/api/v1/cases`, `/api/v1/cases/:caseId/review`, `/api/v1/cases/:caseId/report`, `/api/v1/cases/:caseId/deliver`, `/api/v1/cases/:caseId/review-seams/ohif`, `/api/v1/cases/:caseId/archive-seams/dicomweb`, `/api/v1/cases/:caseId`, and `/api/v1/cases/:caseId/events`
+  - exposes `/healthz`, `/readyz`, `/metrics`, `/api/v1/manifest`, `/api/v1/cases`, `/api/v1/cases/:caseId/review`, `/api/v1/cases/:caseId/report`, `/api/v1/cases/:caseId/report/export`, `/api/v1/cases/:caseId/deliver`, `/api/v1/cases/:caseId/review-seams/ohif`, `/api/v1/cases/:caseId/archive-seams/dicomweb`, `/api/v1/cases/:caseId`, and `/api/v1/cases/:caseId/events`
   - returns persisted QC, generation, review, and delivery summaries alongside case retrieval responses
 
 - `src/domain/manifest.ts`

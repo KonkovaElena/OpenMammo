@@ -308,6 +308,51 @@ export function createApp(options: CreateAppOptions): Express {
     }
   });
 
+  app.get("/api/v1/cases/:caseId/report/export", async (request: Request, response: Response) => {
+    try {
+      const caseId = getSingleRouteParam(request.params.caseId);
+      const output = await options.renderCaseReport(caseId);
+
+      if (!output) {
+        response.status(404).json(
+          buildErrorEnvelope(
+            request,
+            "CASE_NOT_FOUND",
+            `Mammography case '${caseId}' was not found.`,
+          ),
+        );
+        return;
+      }
+
+      response.setHeader("content-type", output.report.format);
+      response.setHeader(
+        "content-disposition",
+        `attachment; filename="${output.report.filename}"`,
+      );
+      response.status(200).send(output.report.body);
+    } catch (error) {
+      if (error instanceof MammographyCaseReportNotReadyError) {
+        response.status(409).json(
+          buildErrorEnvelope(
+            request,
+            "CASE_REPORT_NOT_READY",
+            error.message,
+          ),
+        );
+        return;
+      }
+
+      logRequestFailure(request, options.logger, error);
+      response.status(500).json(
+        buildErrorEnvelope(
+          request,
+          "INTERNAL_ERROR",
+          "Case report export failed unexpectedly.",
+        ),
+      );
+    }
+  });
+
   app.post("/api/v1/cases/:caseId/deliver", async (request: Request, response: Response) => {
     try {
       const caseId = getSingleRouteParam(request.params.caseId);

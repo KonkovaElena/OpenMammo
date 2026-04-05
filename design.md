@@ -72,12 +72,15 @@ Implemented in the second wave 5 slice:
 - Orthanc and DICOMweb-compatible archive seam route with env-backed DICOMweb and WADO-URI roots
 - OHIF seam upgrade from placeholder datasource roots to configured archive roots when `ORTHANC_BASE_URL` is present
 
+Implemented in the report export slice:
+- plain-text attachment export route for finalized clinician reports
+- export behavior that reuses the finalized report rendering contract and preserves the same safety gate
+
 Not implemented yet:
 - deeper image QC
 - deeper inference orchestration and multi-engine routing
 - live Python imaging inference and Node-to-sidecar integration
 - production-grade database-backed persistence
-- report export
 - archive integration
 
 ## Scope Discipline
