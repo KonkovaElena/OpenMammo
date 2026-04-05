@@ -64,10 +64,15 @@ Implemented in the third wave 4 slice:
 - delivery tracking route for finalized reports with persisted delivery metadata
 - case-delivered lifecycle event after delivery recording
 
+Implemented in the first wave 5 slice:
+- OHIF-compatible review seam route with a truthful launch manifest for `StudyInstanceUIDs`
+- DICOMweb-style datasource placeholders marked not-ready until archive wiring exists
+
 Not implemented yet:
 - deeper image QC
 - deeper inference orchestration and multi-engine routing
 - live Python imaging inference and Node-to-sidecar integration
+- Orthanc and DICOMweb-compatible archive seam
 - production-grade database-backed persistence
 - report export
 - archive integration

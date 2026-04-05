@@ -3,6 +3,7 @@ import type { Express } from "express";
 import { createApp } from "./application/createApp";
 import { DeliverMammographyCaseReportUseCase } from "./application/usecases/DeliverMammographyCaseReportUseCase";
 import { FinalizeMammographySecondOpinionReviewUseCase } from "./application/usecases/FinalizeMammographySecondOpinionReviewUseCase";
+import { RenderOhifReviewSeamUseCase } from "./application/usecases/RenderOhifReviewSeamUseCase";
 import { RenderMammographyCaseReportUseCase } from "./application/usecases/RenderMammographyCaseReportUseCase";
 import { GetMammographySecondOpinionCaseUseCase } from "./application/usecases/GetMammographySecondOpinionCaseUseCase";
 import { GetMammographySecondOpinionCaseEventsUseCase } from "./application/usecases/GetMammographySecondOpinionCaseEventsUseCase";
@@ -53,6 +54,7 @@ export function bootstrap(options: BootstrapOptions = {}): BootstrapResult {
   const finalizeReviewUseCase = new FinalizeMammographySecondOpinionReviewUseCase(repository);
   const renderReportUseCase = new RenderMammographyCaseReportUseCase(repository);
   const deliverReportUseCase = new DeliverMammographyCaseReportUseCase(repository);
+  const renderOhifReviewSeamUseCase = new RenderOhifReviewSeamUseCase(repository);
 
   const app = createApp({
     metricsEnabled: options.metricsEnabled ?? true,
@@ -67,6 +69,7 @@ export function bootstrap(options: BootstrapOptions = {}): BootstrapResult {
     finalizeCaseReview: (caseId, reviewInput) => finalizeReviewUseCase.execute(caseId, reviewInput),
     renderCaseReport: (caseId) => renderReportUseCase.execute(caseId),
     deliverCaseReport: (caseId, deliveryInput) => deliverReportUseCase.execute(caseId, deliveryInput),
+    renderOhifReviewSeam: (caseId) => renderOhifReviewSeamUseCase.execute(caseId),
   });
 
   return {

@@ -25,12 +25,12 @@ Date: 2026-04-05
   - acts as the composition root
   - creates the Prometheus registry
   - creates the request counter
-  - wires the app with runtime dependencies, including the configured case repository, QC policy, baseline draft orchestrator path, clinician review finalization use case, report rendering use case, and delivery tracking use case
+  - wires the app with runtime dependencies, including the configured case repository, QC policy, baseline draft orchestrator path, clinician review finalization use case, report rendering use case, delivery tracking use case, and the OHIF review seam use case
 
 - `src/application/createApp.ts`
   - creates the Express app
   - sets correlation headers
-  - exposes `/healthz`, `/readyz`, `/metrics`, `/api/v1/manifest`, `/api/v1/cases`, `/api/v1/cases/:caseId/review`, `/api/v1/cases/:caseId/report`, `/api/v1/cases/:caseId/deliver`, `/api/v1/cases/:caseId`, and `/api/v1/cases/:caseId/events`
+  - exposes `/healthz`, `/readyz`, `/metrics`, `/api/v1/manifest`, `/api/v1/cases`, `/api/v1/cases/:caseId/review`, `/api/v1/cases/:caseId/report`, `/api/v1/cases/:caseId/deliver`, `/api/v1/cases/:caseId/review-seams/ohif`, `/api/v1/cases/:caseId`, and `/api/v1/cases/:caseId/events`
   - returns persisted QC, generation, review, and delivery summaries alongside case retrieval responses
 
 - `src/domain/manifest.ts`

@@ -428,6 +428,62 @@ components:
           enum: [Finalized]
         report:
           $ref: '#/components/schemas/RenderedReport'
+    OhifReviewSeamResponse:
+      type: object
+      required: [caseId, viewer, dataSource, workflow]
+      properties:
+        caseId:
+          type: string
+          format: uuid
+        viewer:
+          type: object
+          required: [vendor, viewerPath, query]
+          properties:
+            vendor:
+              type: string
+              const: OHIF
+            viewerPath:
+              type: string
+              const: /viewer
+            query:
+              type: object
+              required: [StudyInstanceUIDs, modalities]
+              properties:
+                StudyInstanceUIDs:
+                  type: array
+                  items:
+                    type: string
+                modalities:
+                  type: string
+                  const: MG
+        dataSource:
+          type: object
+          required: [namespace, sourceName, qidoRoot, wadoRoot, wadoUriRoot, ready]
+          properties:
+            namespace:
+              type: string
+              const: dicomweb
+            sourceName:
+              type: string
+              const: dicomweb
+            qidoRoot:
+              type: 'null'
+            wadoRoot:
+              type: 'null'
+            wadoUriRoot:
+              type: 'null'
+            ready:
+              type: boolean
+              const: false
+        workflow:
+          type: object
+          required: [caseStatus, reviewReady]
+          properties:
+            caseStatus:
+              type: string
+              enum: [Submitted, AwaitingReview, Finalized]
+            reviewReady:
+              type: boolean
     CaseEventsResponse:
       type: object
       required: [caseId, count, events]
@@ -654,6 +710,35 @@ paths:
                 $ref: '#/components/schemas/ErrorEnvelope'
         '500':
           description: Unexpected server-side failure during delivery tracking
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/cases/{caseId}/review-seams/ohif:
+    get:
+      operationId: renderOhifReviewSeam
+      parameters:
+        - name: caseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OHIF-compatible launch manifest for case review
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OhifReviewSeamResponse'
+        '404':
+          description: Case not found in the configured persistence store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: Unexpected server-side failure during OHIF seam rendering
           content:
             application/json:
               schema:

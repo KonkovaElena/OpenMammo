@@ -52,6 +52,11 @@ Current status:
 - OHIF-compatible review seam
 - Orthanc and DICOMweb-compatible archive seam
 
+Current status:
+
+- OHIF-compatible review seam: implemented as a read-only OHIF launch manifest using `StudyInstanceUIDs` and DICOMweb-style datasource placeholders
+- Orthanc and DICOMweb-compatible archive seam: not started
+
 ## Validation Boundary
 
 - public datasets are acceptable for early experimentation only

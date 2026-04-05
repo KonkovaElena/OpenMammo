@@ -15,6 +15,7 @@ import {
 } from "../domain/mammography/contracts";
 import { MammographyCaseDeliveryConflictError } from "./usecases/DeliverMammographyCaseReportUseCase";
 import { MammographyCaseReviewConflictError } from "./usecases/FinalizeMammographySecondOpinionReviewUseCase";
+import type { MammographyOhifReviewSeamResponse } from "./usecases/RenderOhifReviewSeamUseCase";
 import { MammographyCaseReportNotReadyError, type MammographyRenderedReportResponse } from "./usecases/RenderMammographyCaseReportUseCase";
 import type {
   GenerateMammographySecondOpinionOutput,
@@ -54,6 +55,7 @@ export interface CreateAppOptions {
     caseId: string,
     deliveryInput: MammographyCaseDeliveryInput,
   ) => Promise<MammographySecondOpinionCaseResponse | null>;
+  renderOhifReviewSeam: (caseId: string) => Promise<MammographyOhifReviewSeamResponse | null>;
 }
 
 export function createApp(options: CreateAppOptions): Express {
@@ -201,6 +203,35 @@ export function createApp(options: CreateAppOptions): Express {
           request,
           "INTERNAL_ERROR",
           "Case event retrieval failed unexpectedly.",
+        ),
+      );
+    }
+  });
+
+  app.get("/api/v1/cases/:caseId/review-seams/ohif", async (request: Request, response: Response) => {
+    try {
+      const caseId = getSingleRouteParam(request.params.caseId);
+      const output = await options.renderOhifReviewSeam(caseId);
+
+      if (!output) {
+        response.status(404).json(
+          buildErrorEnvelope(
+            request,
+            "CASE_NOT_FOUND",
+            `Mammography case '${caseId}' was not found.`,
+          ),
+        );
+        return;
+      }
+
+      response.status(200).json(output);
+    } catch (error) {
+      logRequestFailure(request, options.logger, error);
+      response.status(500).json(
+        buildErrorEnvelope(
+          request,
+          "INTERNAL_ERROR",
+          "OHIF review seam rendering failed unexpectedly.",
         ),
       );
     }
