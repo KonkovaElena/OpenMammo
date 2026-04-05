@@ -4,6 +4,7 @@ import type {
   MammographyClinicalQuestion,
   MammographyDraftAssessment,
   MammographyExam,
+  MammographyExamQualitySummary,
   MammographySecondOpinionCaseSnapshot,
   MammographySafetyFlag,
 } from "./contracts";
@@ -18,6 +19,7 @@ export class MammographySecondOpinionCase {
   private _assessment: MammographyDraftAssessment | null;
   private _modelId: string | null;
   private _latencyMs: number | null;
+  private _qc: MammographyExamQualitySummary | null;
   private _safetyFlags: MammographySafetyFlag[];
   private _events: MammographyCaseLifecycleEvent[];
 
@@ -27,6 +29,7 @@ export class MammographySecondOpinionCase {
     this._assessment = snapshot.assessment;
     this._modelId = snapshot.modelId;
     this._latencyMs = snapshot.latencyMs;
+    this._qc = snapshot.qc;
     this._safetyFlags = snapshot.safetyFlags;
     this._events = snapshot.events;
     this._exam = snapshot.exam;
@@ -47,6 +50,7 @@ export class MammographySecondOpinionCase {
       assessment: null,
       modelId: null,
       latencyMs: null,
+      qc: null,
       safetyFlags: [],
       events: [createCaseSubmittedEvent(caseId, exam, clinicalQuestion)],
     });
@@ -68,6 +72,14 @@ export class MammographySecondOpinionCase {
     this._events = [
       ...this._events,
       createDraftGeneratedEvent(this._caseId, assessment, modelId, latencyMs),
+    ];
+  }
+
+  applyExamQuality(summary: MammographyExamQualitySummary): void {
+    this._qc = summary;
+    this._events = [
+      ...this._events,
+      createExamQcEvaluatedEvent(this._caseId, summary),
     ];
   }
 
@@ -99,6 +111,10 @@ export class MammographySecondOpinionCase {
     return this._assessment;
   }
 
+  get qc(): MammographyExamQualitySummary | null {
+    return this._qc;
+  }
+
   get safetyFlags(): readonly MammographySafetyFlag[] {
     return this._safetyFlags;
   }
@@ -120,6 +136,7 @@ export class MammographySecondOpinionCase {
       assessment: this._assessment,
       modelId: this._modelId,
       latencyMs: this._latencyMs,
+      qc: this._qc,
       safetyFlags: this._safetyFlags,
       events: this._events,
     };
@@ -164,6 +181,19 @@ function createDraftGeneratedEvent(
       modelId,
       latencyMs,
     },
+  };
+}
+
+function createExamQcEvaluatedEvent(
+  caseId: string,
+  summary: MammographyExamQualitySummary,
+): MammographyCaseLifecycleEvent {
+  return {
+    eventId: randomUUID(),
+    caseId,
+    occurredAt: new Date().toISOString(),
+    type: "mammography.exam-qc-evaluated.v1",
+    payload: summary,
   };
 }
 

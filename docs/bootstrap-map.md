@@ -31,6 +31,7 @@ Date: 2026-04-05
   - creates the Express app
   - sets correlation headers
   - exposes `/healthz`, `/readyz`, `/metrics`, `/api/v1/manifest`, `/api/v1/cases`, `/api/v1/cases/:caseId`, and `/api/v1/cases/:caseId/events`
+  - returns persisted QC summaries alongside case retrieval responses
 
 - `src/domain/manifest.ts`
   - declares machine-readable mission, modality boundary, safety posture, and non-goals

@@ -42,6 +42,11 @@ test("file-backed repository reloads a persisted mammography case across instanc
 
   try {
     const caseAggregate = MammographySecondOpinionCase.submit(validExam, validClinicalQuestion);
+    caseAggregate.applyExamQuality({
+      status: "pass",
+      findingCount: 0,
+      findings: [],
+    });
     caseAggregate.completeDraft(validAssessment, "baseline-rule-engine:v0", 12);
     caseAggregate.applySafetyFlags([
       {
@@ -62,6 +67,7 @@ test("file-backed repository reloads a persisted mammography case across instanc
     assert.equal(reloadedCase?.caseId, caseAggregate.caseId);
     assert.equal(reloadedCase?.status, "AwaitingReview");
     assert.equal(reloadedCase?.assessment?.summary, validAssessment.summary);
+    assert.equal(reloadedCase?.qc?.status, "pass");
     assert.equal(reloadedCase?.safetyFlags.length, 1);
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
@@ -102,6 +108,7 @@ test("GET /api/v1/cases/:caseId returns the persisted case after a bootstrap res
     assert.equal(readResponse.body.caseId, createResponse.body.caseId);
     assert.equal(readResponse.body.status, "AwaitingReview");
     assert.equal(readResponse.body.assessment.outputMode, "draft-only");
+    assert.equal(readResponse.body.qc.status, "pass");
     assert.equal(readResponse.body.safety.hasBlockingFlags, false);
 
     const missingResponse = await request(secondBootstrap.app)
@@ -139,6 +146,7 @@ test("GET /api/v1/cases/:caseId returns submitted cases without forcing a 500", 
     assert.equal(response.body.caseId, submittedCase.caseId);
     assert.equal(response.body.status, "Submitted");
     assert.equal(response.body.assessment, null);
+    assert.equal(response.body.qc, null);
     assert.equal(response.body.safety.flagCount, 0);
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
@@ -177,16 +185,19 @@ test("GET /api/v1/cases/:caseId/events returns persisted lifecycle events after 
 
     assert.equal(response.status, 200);
     assert.equal(response.body.caseId, createResponse.body.caseId);
-    assert.equal(response.body.count, 3);
+    assert.equal(response.body.count, 4);
     assert.deepEqual(
       response.body.events.map((event: { type: string }) => event.type),
       [
         "mammography.case-submitted.v1",
+        "mammography.exam-qc-evaluated.v1",
         "mammography.draft-generated.v1",
         "mammography.safety-flags-applied.v1",
       ],
     );
-    assert.equal(response.body.events[2].payload.flagCount, 0);
+    assert.equal(response.body.events[1].payload.status, "pass");
+    assert.equal(response.body.events[1].payload.findingCount, 0);
+    assert.equal(response.body.events[3].payload.flagCount, 0);
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
   }

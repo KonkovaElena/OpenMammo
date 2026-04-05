@@ -2,6 +2,7 @@ import type {
   MammographyClinicalQuestion,
   MammographyDraftAssessment,
   MammographyExam,
+  MammographyExamQualitySummary,
   MammographySafetyFlag,
 } from "./contracts";
 import type { MammographySecondOpinionCase } from "./MammographySecondOpinionCase";
@@ -19,6 +20,12 @@ export interface IMammographyDraftInferenceService {
     assessment: MammographyDraftAssessment;
     modelId: string;
     latencyMs: number;
+  }>;
+}
+
+export interface IMammographyExamQualityPolicy {
+  evaluate(exam: MammographyExam): Promise<{
+    summary: MammographyExamQualitySummary;
   }>;
 }
 

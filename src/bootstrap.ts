@@ -11,6 +11,7 @@ import { FileBasedMammographySecondOpinionCaseRepository } from "./infrastructur
 import { MammographySecondOpinionCase } from "./domain/mammography/MammographySecondOpinionCase";
 import type {
   IMammographyDraftInferenceService,
+  IMammographyExamQualityPolicy,
   IMammographySafetyPolicy,
   IMammographySecondOpinionCaseRepository,
 } from "./domain/mammography/ports";
@@ -36,10 +37,12 @@ export function bootstrap(options: BootstrapOptions = {}): BootstrapResult {
 
   const repository = createCaseRepository(options.caseStorePath);
   const inferenceService = createBaselineInferenceService();
+  const examQualityPolicy = createBaselineExamQualityPolicy();
   const safetyPolicy = createBaselineSafetyPolicy();
   const generateCaseUseCase = new GenerateMammographySecondOpinionUseCase(
     repository,
     inferenceService,
+    examQualityPolicy,
     safetyPolicy,
   );
   const getCaseUseCase = new GetMammographySecondOpinionCaseUseCase(repository);
@@ -113,21 +116,50 @@ function createBaselineInferenceService(): IMammographyDraftInferenceService {
   };
 }
 
-function createBaselineSafetyPolicy(): IMammographySafetyPolicy {
+function createBaselineExamQualityPolicy(): IMammographyExamQualityPolicy {
   return {
-    async evaluate(_assessment, exam) {
-      const flags = [];
+    async evaluate(exam) {
+      const findings = [];
 
       if (!exam.accessionNumber) {
-        flags.push({
+        findings.push({
           code: "MISSING_ACCESSION_NUMBER",
-          severity: "info" as const,
-          description: "Accession number is absent; downstream archive correlation may require manual confirmation.",
-          blocksReview: false,
+          severity: "warning" as const,
+          description: "Accession number is absent; downstream archive reconciliation may require manual confirmation.",
         });
       }
 
-      return { flags };
+      if (typeof exam.patientAge !== "number") {
+        findings.push({
+          code: "MISSING_PATIENT_AGE",
+          severity: "warning" as const,
+          description: "Patient age is absent; age-aware clinician review context is incomplete.",
+        });
+      }
+
+      if (!exam.breastDensity) {
+        findings.push({
+          code: "MISSING_BREAST_DENSITY",
+          severity: "warning" as const,
+          description: "Breast density is absent; density-aware mammography review context is incomplete.",
+        });
+      }
+
+      return {
+        summary: {
+          status: findings.length > 0 ? "warning" : "pass",
+          findingCount: findings.length,
+          findings,
+        },
+      };
+    },
+  };
+}
+
+function createBaselineSafetyPolicy(): IMammographySafetyPolicy {
+  return {
+    async evaluate() {
+      return { flags: [] };
     },
   };
 }

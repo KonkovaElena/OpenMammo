@@ -29,6 +29,12 @@ Current status:
 - exam consistency and QC
 - initial draft-generation orchestration
 
+Current status:
+
+- Python imaging sidecar: not started
+- exam consistency and QC: implemented as persisted QC summaries and `mammography.exam-qc-evaluated.v1` lifecycle events
+- initial draft-generation orchestration: baseline rule-engine only
+
 ## Wave 4
 
 - radiologist review and finalization workflow

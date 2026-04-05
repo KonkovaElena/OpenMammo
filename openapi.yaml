@@ -91,6 +91,30 @@ components:
           type: integer
         hasBlockingFlags:
           type: boolean
+    CaseQualityFinding:
+      type: object
+      required: [code, severity, description]
+      properties:
+        code:
+          type: string
+        severity:
+          type: string
+          enum: [info, warning]
+        description:
+          type: string
+    CaseQuality:
+      type: object
+      required: [status, findingCount, findings]
+      properties:
+        status:
+          type: string
+          enum: [pass, warning]
+        findingCount:
+          type: integer
+        findings:
+          type: array
+          items:
+            $ref: '#/components/schemas/CaseQualityFinding'
     MammographyCaseSubmittedEvent:
       type: object
       required: [eventId, caseId, occurredAt, type, payload]
@@ -163,6 +187,24 @@ components:
               type: string
             latencyMs:
               type: integer
+    MammographyExamQcEvaluatedEvent:
+      type: object
+      required: [eventId, caseId, occurredAt, type, payload]
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        caseId:
+          type: string
+          format: uuid
+        occurredAt:
+          type: string
+          format: date-time
+        type:
+          type: string
+          const: mammography.exam-qc-evaluated.v1
+        payload:
+          $ref: '#/components/schemas/CaseQuality'
     MammographySafetyFlagsAppliedEvent:
       type: object
       required: [eventId, caseId, occurredAt, type, payload]
@@ -205,11 +247,12 @@ components:
     MammographyCaseLifecycleEvent:
       oneOf:
         - $ref: '#/components/schemas/MammographyCaseSubmittedEvent'
+        - $ref: '#/components/schemas/MammographyExamQcEvaluatedEvent'
         - $ref: '#/components/schemas/MammographyDraftGeneratedEvent'
         - $ref: '#/components/schemas/MammographySafetyFlagsAppliedEvent'
     CaseResponse:
       type: object
-      required: [caseId, status, assessment, safety]
+      required: [caseId, status, assessment, qc, safety]
       properties:
         caseId:
           type: string
@@ -220,6 +263,10 @@ components:
         assessment:
           anyOf:
             - $ref: '#/components/schemas/CaseAssessment'
+            - type: 'null'
+        qc:
+          anyOf:
+            - $ref: '#/components/schemas/CaseQuality'
             - type: 'null'
         safety:
           $ref: '#/components/schemas/CaseSafety'

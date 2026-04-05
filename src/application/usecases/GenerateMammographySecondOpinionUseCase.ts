@@ -2,6 +2,7 @@ import type { CreateMammographyCaseRequest } from "../../domain/mammography/cont
 import { MammographySecondOpinionCase } from "../../domain/mammography/MammographySecondOpinionCase";
 import type {
   IMammographyDraftInferenceService,
+  IMammographyExamQualityPolicy,
   IMammographySafetyPolicy,
   IMammographySecondOpinionCaseRepository,
 } from "../../domain/mammography/ports";
@@ -15,6 +16,15 @@ export interface MammographySecondOpinionCaseResponse {
     confidenceBand: string;
     outputMode: "draft-only";
   } | null;
+  qc: {
+    status: "pass" | "warning";
+    findingCount: number;
+    findings: Array<{
+      code: string;
+      severity: "info" | "warning";
+      description: string;
+    }>;
+  } | null;
   safety: {
     flagCount: number;
     hasBlockingFlags: boolean;
@@ -27,6 +37,7 @@ export class GenerateMammographySecondOpinionUseCase {
   constructor(
     private readonly repository: IMammographySecondOpinionCaseRepository,
     private readonly inferenceService: IMammographyDraftInferenceService,
+    private readonly examQualityPolicy: IMammographyExamQualityPolicy,
     private readonly safetyPolicy: IMammographySafetyPolicy,
   ) {}
 
@@ -34,6 +45,10 @@ export class GenerateMammographySecondOpinionUseCase {
     input: CreateMammographyCaseRequest,
   ): Promise<GenerateMammographySecondOpinionOutput> {
     const mammographyCase = MammographySecondOpinionCase.submit(input.exam, input.clinicalQuestion);
+    const qcResult = await this.examQualityPolicy.evaluate(input.exam);
+
+    mammographyCase.applyExamQuality(qcResult.summary);
+
     const inferenceResult = await this.inferenceService.generateDraft(input.exam, input.clinicalQuestion);
 
     mammographyCase.completeDraft(
@@ -67,6 +82,13 @@ export function mapMammographySecondOpinionCaseToResponse(
           summary: caseAggregate.assessment.summary,
           confidenceBand: caseAggregate.assessment.confidenceBand,
           outputMode: caseAggregate.assessment.outputMode,
+        }
+      : null,
+    qc: caseAggregate.qc
+      ? {
+          status: caseAggregate.qc.status,
+          findingCount: caseAggregate.qc.findingCount,
+          findings: [...caseAggregate.qc.findings],
         }
       : null,
     safety: {
