@@ -1,0 +1,103 @@
+name: standalone-ci
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - v*
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
+
+      - name: Runtime smoke
+        run: npm run smoke:health
+
+      - name: Coverage
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          mkdir -p coverage
+          npm run test:coverage | tee coverage/summary.txt
+
+      - name: Audit runtime dependencies
+        if: runner.os == 'Linux'
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Archive dist artifact
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: mammography-second-opinion-dist-${{ github.sha }}
+          path: dist
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: Archive coverage artifact
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: mammography-second-opinion-coverage-${{ github.sha }}
+          path: coverage/summary.txt
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: Validate standalone
+        if: runner.os == 'Linux'
+        run: npm run validate:public-export
+
+  container-smoke:
+    name: Container smoke
+    runs-on: ubuntu-latest
+    needs: validate
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build container image
+        run: docker build --tag mammography-second-opinion:${{ github.sha }} .
+
+      - name: Smoke container health endpoints
+        run: |
+          docker run -d --rm --name mammography-second-opinion-smoke -p 18080:4030 mammography-second-opinion:${{ github.sha }}
+          node scripts/smoke-health.mjs --skip-start --base-url http://127.0.0.1:18080
+          docker stop mammography-second-opinion-smoke

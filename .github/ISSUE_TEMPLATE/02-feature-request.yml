@@ -1,0 +1,36 @@
+name: Feature request
+description: Propose a bounded improvement that fits the current standalone scope.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Request only changes that fit the active FFDM clinician-in-the-loop boundary.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Boundary check
+      description: Explain why this request does not widen the repository into DBT, MRI, autonomous diagnosis, or PACS replacement.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence or references
+      description: Link code, docs, standards, or papers when the request depends on them.
+    validations:
+      required: false

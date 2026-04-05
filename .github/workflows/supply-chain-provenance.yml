@@ -1,0 +1,80 @@
+name: Supply Chain Provenance
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - v*
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  attest-build:
+    name: Build Bundle And Attest
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Generate runtime SBOM
+        run: npm run sbom:cyclonedx:file
+
+      - name: Package attestable build artifact
+        run: tar -czf mammography-second-opinion-dist-${{ github.sha }}.tgz dist package.json package-lock.json README.md LICENSE openapi.yaml
+
+      - name: Generate checksums
+        run: sha256sum mammography-second-opinion-dist-${{ github.sha }}.tgz mammography-second-opinion-runtime-sbom.cdx.json > mammography-second-opinion-artifacts.sha256
+
+      - name: Upload build bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: mammography-second-opinion-dist-${{ github.sha }}
+          path: mammography-second-opinion-dist-${{ github.sha }}.tgz
+          retention-days: 7
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: mammography-second-opinion-runtime-sbom-${{ github.sha }}
+          path: mammography-second-opinion-runtime-sbom.cdx.json
+          retention-days: 7
+
+      - name: Upload checksums
+        uses: actions/upload-artifact@v4
+        with:
+          name: mammography-second-opinion-artifacts-sha256-${{ github.sha }}
+          path: mammography-second-opinion-artifacts.sha256
+          retention-days: 7
+
+      - name: Attest build provenance
+        uses: actions/attest@v4
+        with:
+          subject-path: ${{ github.workspace }}/mammography-second-opinion-dist-${{ github.sha }}.tgz
+
+      - name: Attest SBOM
+        uses: actions/attest@v4
+        with:
+          subject-path: ${{ github.workspace }}/mammography-second-opinion-dist-${{ github.sha }}.tgz
+          sbom-path: ${{ github.workspace }}/mammography-second-opinion-runtime-sbom.cdx.json

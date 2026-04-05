@@ -1,0 +1,14 @@
+.git
+.github
+.gitignore
+node_modules
+dist
+coverage
+artifacts
+docs
+tests
+.env*
+__*.txt
+*.log
+.vscode
+.DS_Store

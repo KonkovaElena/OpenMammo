@@ -1,0 +1,10 @@
+dist/
+node_modules/
+.env
+.DS_Store
+coverage/
+artifacts/
+__*.txt
+mammography-second-opinion-runtime-sbom.cdx.json
+mammography-second-opinion-dist-*.tgz
+mammography-second-opinion-artifacts.sha256
