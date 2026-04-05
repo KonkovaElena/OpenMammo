@@ -56,11 +56,14 @@ Implemented in the first wave 4 slice:
 - clinician review finalization route with persisted reviewer summary and conflict handling
 - review-finalized lifecycle event after clinician confirmation or modification
 
+Implemented in the second wave 4 slice:
+- deterministic report rendering route for finalized clinician-reviewed cases
+- report artifact response with text body, filename, and render timestamp
+
 Not implemented yet:
 - deeper image QC
 - deeper inference orchestration and multi-engine routing
 - live Python imaging inference and Node-to-sidecar integration
-- report rendering
 - delivery tracking
 - production-grade database-backed persistence
 - report export

@@ -12,6 +12,7 @@ import {
   type MammographyCaseReviewInput,
 } from "../domain/mammography/contracts";
 import { MammographyCaseReviewConflictError } from "./usecases/FinalizeMammographySecondOpinionReviewUseCase";
+import { MammographyCaseReportNotReadyError, type MammographyRenderedReportResponse } from "./usecases/RenderMammographyCaseReportUseCase";
 import type {
   GenerateMammographySecondOpinionOutput,
   MammographySecondOpinionCaseResponse,
@@ -45,6 +46,7 @@ export interface CreateAppOptions {
     caseId: string,
     reviewInput: MammographyCaseReviewInput,
   ) => Promise<MammographySecondOpinionCaseResponse | null>;
+  renderCaseReport: (caseId: string) => Promise<MammographyRenderedReportResponse | null>;
 }
 
 export function createApp(options: CreateAppOptions): Express {
@@ -192,6 +194,46 @@ export function createApp(options: CreateAppOptions): Express {
           request,
           "INTERNAL_ERROR",
           "Case event retrieval failed unexpectedly.",
+        ),
+      );
+    }
+  });
+
+  app.get("/api/v1/cases/:caseId/report", async (request: Request, response: Response) => {
+    try {
+      const caseId = getSingleRouteParam(request.params.caseId);
+      const output = await options.renderCaseReport(caseId);
+
+      if (!output) {
+        response.status(404).json(
+          buildErrorEnvelope(
+            request,
+            "CASE_NOT_FOUND",
+            `Mammography case '${caseId}' was not found.`,
+          ),
+        );
+        return;
+      }
+
+      response.status(200).json(output);
+    } catch (error) {
+      if (error instanceof MammographyCaseReportNotReadyError) {
+        response.status(409).json(
+          buildErrorEnvelope(
+            request,
+            "CASE_REPORT_NOT_READY",
+            error.message,
+          ),
+        );
+        return;
+      }
+
+      logRequestFailure(request, options.logger, error);
+      response.status(500).json(
+        buildErrorEnvelope(
+          request,
+          "INTERNAL_ERROR",
+          "Case report rendering failed unexpectedly.",
         ),
       );
     }
