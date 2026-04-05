@@ -7,8 +7,11 @@ import { standaloneManifest } from "../domain/manifest";
 import type { StructuredLogger } from "../logging";
 import {
   createMammographyCaseRequestSchema,
+  mammographyCaseReviewInputSchema,
   type CreateMammographyCaseRequest,
+  type MammographyCaseReviewInput,
 } from "../domain/mammography/contracts";
+import { MammographyCaseReviewConflictError } from "./usecases/FinalizeMammographySecondOpinionReviewUseCase";
 import type {
   GenerateMammographySecondOpinionOutput,
   MammographySecondOpinionCaseResponse,
@@ -38,6 +41,10 @@ export interface CreateAppOptions {
   ) => Promise<GenerateMammographySecondOpinionOutput>;
   getCaseById: (caseId: string) => Promise<MammographySecondOpinionCaseResponse | null>;
   getCaseEventsById: (caseId: string) => Promise<MammographySecondOpinionCaseEventsResponse | null>;
+  finalizeCaseReview: (
+    caseId: string,
+    reviewInput: MammographyCaseReviewInput,
+  ) => Promise<MammographySecondOpinionCaseResponse | null>;
 }
 
 export function createApp(options: CreateAppOptions): Express {
@@ -185,6 +192,59 @@ export function createApp(options: CreateAppOptions): Express {
           request,
           "INTERNAL_ERROR",
           "Case event retrieval failed unexpectedly.",
+        ),
+      );
+    }
+  });
+
+  app.post("/api/v1/cases/:caseId/review", async (request: Request, response: Response) => {
+    try {
+      const caseId = getSingleRouteParam(request.params.caseId);
+      const reviewInput = mammographyCaseReviewInputSchema.parse(request.body);
+      const output = await options.finalizeCaseReview(caseId, reviewInput);
+
+      if (!output) {
+        response.status(404).json(
+          buildErrorEnvelope(
+            request,
+            "CASE_NOT_FOUND",
+            `Mammography case '${caseId}' was not found.`,
+          ),
+        );
+        return;
+      }
+
+      response.status(200).json(output);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        response.status(400).json(
+          buildErrorEnvelope(
+            request,
+            "INVALID_REQUEST_BODY",
+            "Review body does not match the clinician review contract.",
+            { issues: error.issues },
+          ),
+        );
+        return;
+      }
+
+      if (error instanceof MammographyCaseReviewConflictError) {
+        response.status(409).json(
+          buildErrorEnvelope(
+            request,
+            "CASE_REVIEW_CONFLICT",
+            error.message,
+          ),
+        );
+        return;
+      }
+
+      logRequestFailure(request, options.logger, error);
+      response.status(500).json(
+        buildErrorEnvelope(
+          request,
+          "INTERNAL_ERROR",
+          "Case review finalization failed unexpectedly.",
         ),
       );
     }

@@ -41,6 +41,12 @@ Current status:
 - report rendering
 - delivery tracking
 
+Current status:
+
+- radiologist review and finalization workflow: implemented as persisted clinician review summaries and `mammography.case-review-finalized.v1` lifecycle events
+- report rendering: not started
+- delivery tracking: not started
+
 ## Wave 5
 
 - OHIF-compatible review seam

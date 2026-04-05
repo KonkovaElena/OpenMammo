@@ -13,9 +13,10 @@ This standalone is intentionally narrow. The first implemented wave is a bootabl
 - exam consistency and QC summary for intake metadata completeness
 - baseline draft generation for clinician review
 - persisted draft-generation orchestration summary with stage timings and model provenance
+- clinician review and finalization workflow with persisted reviewer decision
 - separate Python imaging sidecar scaffold for future compute workloads
 - file-backed persistence seam for draft case retrieval
-- typed lifecycle event history for submitted, QC-evaluated, drafted, safety-evaluated, and orchestrated cases
+- typed lifecycle event history for submitted, QC-evaluated, drafted, safety-evaluated, orchestrated, and finalized cases
 - request correlation headers
 - structured request logging for completed and failed requests
 - request-aware error envelopes for invalid and unexpected intake or retrieval failures
@@ -85,10 +86,11 @@ The repository now includes a dedicated provenance workflow at `.github/workflow
 - GET /metrics
 - GET /api/v1/manifest
 - POST /api/v1/cases
+- POST /api/v1/cases/:caseId/review
 - GET /api/v1/cases/:caseId
 - GET /api/v1/cases/:caseId/events
 
-`/readyz` returns product and runtime status. Retrieval can return `status="Submitted"` with `assessment=null`, `qc=null`, and `generation=null` for persisted cases that exist before QC or draft completion. Case responses now include a QC summary for intake metadata completeness plus a persisted draft-generation orchestration summary. Error responses for case intake, case retrieval, and case event retrieval include request and correlation identifiers to simplify operator debugging.
+`/readyz` returns product and runtime status. Retrieval can return `status="Submitted"` with `assessment=null`, `qc=null`, `generation=null`, and `review=null` for persisted cases that exist before QC, draft completion, or clinician finalization. Case responses now include QC, generation, and review summaries across the workflow. Error responses for case intake, case retrieval, case review finalization, and case event retrieval include request and correlation identifiers to simplify operator debugging.
 
 ## Python Sidecar Scaffold
 

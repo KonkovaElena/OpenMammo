@@ -1,4 +1,7 @@
-import type { CreateMammographyCaseRequest } from "../../domain/mammography/contracts";
+import type {
+  CreateMammographyCaseRequest,
+  MammographyCaseReviewSummary,
+} from "../../domain/mammography/contracts";
 import { MammographySecondOpinionCase } from "../../domain/mammography/MammographySecondOpinionCase";
 import type {
   IMammographyDraftInferenceService,
@@ -35,6 +38,7 @@ export interface MammographySecondOpinionCaseResponse {
       latencyMs: number;
     }>;
   } | null;
+  review: MammographyCaseReviewSummary | null;
   safety: {
     flagCount: number;
     hasBlockingFlags: boolean;
@@ -135,6 +139,7 @@ export function mapMammographySecondOpinionCaseToResponse(
           stages: [...caseAggregate.generation.stages],
         }
       : null,
+    review: caseAggregate.review,
     safety: {
       flagCount: caseAggregate.safetyFlags.length,
       hasBlockingFlags: caseAggregate.hasBlockingFlags,

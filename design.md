@@ -52,11 +52,16 @@ Implemented in the third wave 3 slice:
 - separate Python imaging sidecar scaffold using FastAPI and Uvicorn
 - health, readiness, manifest, and capability routes for future FFDM compute integration
 
+Implemented in the first wave 4 slice:
+- clinician review finalization route with persisted reviewer summary and conflict handling
+- review-finalized lifecycle event after clinician confirmation or modification
+
 Not implemented yet:
 - deeper image QC
 - deeper inference orchestration and multi-engine routing
 - live Python imaging inference and Node-to-sidecar integration
-- radiologist review workflow
+- report rendering
+- delivery tracking
 - production-grade database-backed persistence
 - report export
 - archive integration

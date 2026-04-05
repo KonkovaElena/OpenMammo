@@ -1,6 +1,7 @@
 import type { Registry } from "prom-client";
 import type { Express } from "express";
 import { createApp } from "./application/createApp";
+import { FinalizeMammographySecondOpinionReviewUseCase } from "./application/usecases/FinalizeMammographySecondOpinionReviewUseCase";
 import { GetMammographySecondOpinionCaseUseCase } from "./application/usecases/GetMammographySecondOpinionCaseUseCase";
 import { GetMammographySecondOpinionCaseEventsUseCase } from "./application/usecases/GetMammographySecondOpinionCaseEventsUseCase";
 import { GenerateMammographySecondOpinionUseCase } from "./application/usecases/GenerateMammographySecondOpinionUseCase";
@@ -47,6 +48,7 @@ export function bootstrap(options: BootstrapOptions = {}): BootstrapResult {
   );
   const getCaseUseCase = new GetMammographySecondOpinionCaseUseCase(repository);
   const getCaseEventsUseCase = new GetMammographySecondOpinionCaseEventsUseCase(repository);
+  const finalizeReviewUseCase = new FinalizeMammographySecondOpinionReviewUseCase(repository);
 
   const app = createApp({
     metricsEnabled: options.metricsEnabled ?? true,
@@ -58,6 +60,7 @@ export function bootstrap(options: BootstrapOptions = {}): BootstrapResult {
     generateCase: (input) => generateCaseUseCase.execute(input),
     getCaseById: (caseId) => getCaseUseCase.execute(caseId),
     getCaseEventsById: (caseId) => getCaseEventsUseCase.execute(caseId),
+    finalizeCaseReview: (caseId, reviewInput) => finalizeReviewUseCase.execute(caseId, reviewInput),
   });
 
   return {

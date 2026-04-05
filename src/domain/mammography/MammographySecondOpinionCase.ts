@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import type {
   MammographyCaseLifecycleEvent,
+  MammographyCaseReviewInput,
+  MammographyCaseReviewSummary,
   MammographyClinicalQuestion,
   MammographyDraftAssessment,
   MammographyDraftGenerationSummary,
@@ -10,7 +12,7 @@ import type {
   MammographySafetyFlag,
 } from "./contracts";
 
-export type MammographyCaseStatus = "Submitted" | "AwaitingReview";
+export type MammographyCaseStatus = "Submitted" | "AwaitingReview" | "Finalized";
 
 export class MammographySecondOpinionCase {
   private readonly _caseId: string;
@@ -22,6 +24,7 @@ export class MammographySecondOpinionCase {
   private _latencyMs: number | null;
   private _qc: MammographyExamQualitySummary | null;
   private _generation: MammographyDraftGenerationSummary | null;
+  private _review: MammographyCaseReviewSummary | null;
   private _safetyFlags: MammographySafetyFlag[];
   private _events: MammographyCaseLifecycleEvent[];
 
@@ -33,6 +36,7 @@ export class MammographySecondOpinionCase {
     this._latencyMs = snapshot.latencyMs;
     this._qc = snapshot.qc;
     this._generation = snapshot.generation;
+    this._review = snapshot.review;
     this._safetyFlags = snapshot.safetyFlags;
     this._events = snapshot.events;
     this._exam = snapshot.exam;
@@ -55,6 +59,7 @@ export class MammographySecondOpinionCase {
       latencyMs: null,
       qc: null,
       generation: null,
+      review: null,
       safetyFlags: [],
       events: [createCaseSubmittedEvent(caseId, exam, clinicalQuestion)],
     });
@@ -103,6 +108,24 @@ export class MammographySecondOpinionCase {
     ];
   }
 
+  finalizeReview(input: MammographyCaseReviewInput): void {
+    if (this._status !== "AwaitingReview") {
+      throw new Error(`Cannot finalize review in state '${this._status}'.`);
+    }
+
+    const reviewSummary: MammographyCaseReviewSummary = {
+      ...input,
+      finalizedAt: new Date().toISOString(),
+    };
+
+    this._review = reviewSummary;
+    this._status = "Finalized";
+    this._events = [
+      ...this._events,
+      createCaseReviewFinalizedEvent(this._caseId, reviewSummary),
+    ];
+  }
+
   get caseId(): string {
     return this._caseId;
   }
@@ -131,6 +154,10 @@ export class MammographySecondOpinionCase {
     return this._generation;
   }
 
+  get review(): MammographyCaseReviewSummary | null {
+    return this._review;
+  }
+
   get safetyFlags(): readonly MammographySafetyFlag[] {
     return this._safetyFlags;
   }
@@ -154,6 +181,7 @@ export class MammographySecondOpinionCase {
       latencyMs: this._latencyMs,
       qc: this._qc,
       generation: this._generation,
+      review: this._review,
       safetyFlags: this._safetyFlags,
       events: this._events,
     };
@@ -224,6 +252,19 @@ function createDraftOrchestrationCompletedEvent(
     occurredAt: new Date().toISOString(),
     type: "mammography.draft-orchestration-completed.v1",
     payload: summary,
+  };
+}
+
+function createCaseReviewFinalizedEvent(
+  caseId: string,
+  reviewSummary: MammographyCaseReviewSummary,
+): MammographyCaseLifecycleEvent {
+  return {
+    eventId: randomUUID(),
+    caseId,
+    occurredAt: new Date().toISOString(),
+    type: "mammography.case-review-finalized.v1",
+    payload: reviewSummary,
   };
 }
 
