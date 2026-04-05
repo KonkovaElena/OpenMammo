@@ -39,3 +39,7 @@ Date: 2026-04-05
 ## Operational Rule
 
 There is one listener entrypoint and one composition root. Future ingestion, persistence, inference, review, and delivery modules must be wired through `src/bootstrap.ts` rather than creating secondary boot chains.
+
+Current exception boundary:
+
+- `python_sidecar/` is a separate future compute process scaffold. It is intentionally not wired into the Node listener chain yet and does not replace the single Node composition root for the public standalone.

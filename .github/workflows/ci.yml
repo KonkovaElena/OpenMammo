@@ -31,6 +31,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: python_sidecar/requirements.txt
+
+      - name: Install Python sidecar dependencies
+        run: python -m pip install -r python_sidecar/requirements.txt
+
+      - name: Test Python sidecar scaffold
+        run: python -m unittest python_sidecar.tests.test_app
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:

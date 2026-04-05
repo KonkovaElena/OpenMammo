@@ -31,7 +31,7 @@ Current status:
 
 Current status:
 
-- Python imaging sidecar: not started
+- Python imaging sidecar: implemented as a separate FastAPI and Uvicorn scaffold with health, readiness, manifest, and capability routes
 - exam consistency and QC: implemented as persisted QC summaries and `mammography.exam-qc-evaluated.v1` lifecycle events
 - initial draft-generation orchestration: implemented as persisted stage summaries and `mammography.draft-orchestration-completed.v1` lifecycle events
 

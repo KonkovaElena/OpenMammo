@@ -48,10 +48,14 @@ Implemented in the second wave 3 slice:
 - persisted draft-generation orchestration summary with stage timings and model provenance
 - orchestration-completed lifecycle event after QC, draft generation, and safety evaluation
 
+Implemented in the third wave 3 slice:
+- separate Python imaging sidecar scaffold using FastAPI and Uvicorn
+- health, readiness, manifest, and capability routes for future FFDM compute integration
+
 Not implemented yet:
-- Python imaging sidecar
 - deeper image QC
 - deeper inference orchestration and multi-engine routing
+- live Python imaging inference and Node-to-sidecar integration
 - radiologist review workflow
 - production-grade database-backed persistence
 - report export

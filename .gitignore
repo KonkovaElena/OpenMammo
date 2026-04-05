@@ -3,6 +3,8 @@ node_modules/
 .env
 .DS_Store
 coverage/
+__pycache__/
+*.py[cod]
 artifacts/
 __*.txt
 mammography-second-opinion-runtime-sbom.cdx.json
