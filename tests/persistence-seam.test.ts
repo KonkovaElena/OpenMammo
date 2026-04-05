@@ -115,3 +115,111 @@ test("GET /api/v1/cases/:caseId returns the persisted case after a bootstrap res
     rmSync(tempDir, { recursive: true, force: true });
   }
 });
+
+test("GET /api/v1/cases/:caseId returns submitted cases without forcing a 500", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "mammography-submitted-store-"));
+  const storePath = join(tempDir, "cases.json");
+
+  try {
+    const repository = new FileBasedMammographySecondOpinionCaseRepository(storePath);
+    const submittedCase = MammographySecondOpinionCase.submit(validExam, validClinicalQuestion);
+    await repository.save(submittedCase);
+
+    const runtime = bootstrap({
+      metricsEnabled: false,
+      isShuttingDown: () => false,
+      caseStorePath: storePath,
+    });
+
+    const response = await request(runtime.app)
+      .get(`/api/v1/cases/${submittedCase.caseId}`)
+      .set("x-request-id", "req-submitted-001");
+
+    assert.equal(response.status, 200);
+    assert.equal(response.body.caseId, submittedCase.caseId);
+    assert.equal(response.body.status, "Submitted");
+    assert.equal(response.body.assessment, null);
+    assert.equal(response.body.safety.flagCount, 0);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("GET /api/v1/cases/:caseId/events returns persisted lifecycle events after restart", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "mammography-events-store-"));
+  const storePath = join(tempDir, "cases.json");
+
+  try {
+    const firstBootstrap = bootstrap({
+      metricsEnabled: false,
+      isShuttingDown: () => false,
+      caseStorePath: storePath,
+    });
+
+    const createResponse = await request(firstBootstrap.app)
+      .post("/api/v1/cases")
+      .send({
+        exam: validExam,
+        clinicalQuestion: validClinicalQuestion,
+      });
+
+    assert.equal(createResponse.status, 201);
+
+    const secondBootstrap = bootstrap({
+      metricsEnabled: false,
+      isShuttingDown: () => false,
+      caseStorePath: storePath,
+    });
+
+    const response = await request(secondBootstrap.app)
+      .get(`/api/v1/cases/${createResponse.body.caseId}/events`)
+      .set("x-request-id", "req-events-001");
+
+    assert.equal(response.status, 200);
+    assert.equal(response.body.caseId, createResponse.body.caseId);
+    assert.equal(response.body.count, 3);
+    assert.deepEqual(
+      response.body.events.map((event: { type: string }) => event.type),
+      [
+        "mammography.case-submitted.v1",
+        "mammography.draft-generated.v1",
+        "mammography.safety-flags-applied.v1",
+      ],
+    );
+    assert.equal(response.body.events[2].payload.flagCount, 0);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("file-backed repository serializes concurrent saves on one instance", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "mammography-concurrent-store-"));
+  const storePath = join(tempDir, "cases.json");
+
+  try {
+    const repository = new FileBasedMammographySecondOpinionCaseRepository(storePath);
+    const caseA = MammographySecondOpinionCase.submit(validExam, validClinicalQuestion);
+    const caseB = MammographySecondOpinionCase.submit(
+      {
+        ...validExam,
+        studyInstanceUid: "1.2.840.10008.1.2.3.41",
+        accessionNumber: "ACC-PERSIST-002",
+      },
+      {
+        ...validClinicalQuestion,
+        questionText: "Persist a second concurrent FFDM case.",
+      },
+    );
+
+    await Promise.all([repository.save(caseA), repository.save(caseB)]);
+
+    const reloadedRepository = new FileBasedMammographySecondOpinionCaseRepository(storePath);
+    const reloadedCaseA = await reloadedRepository.getById(caseA.caseId);
+    const reloadedCaseB = await reloadedRepository.getById(caseB.caseId);
+
+    assert.ok(reloadedCaseA);
+    assert.ok(reloadedCaseB);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});

@@ -12,9 +12,10 @@ This standalone is intentionally narrow. The first implemented wave is a bootabl
 - validated FFDM case intake contract
 - baseline draft generation for clinician review
 - file-backed persistence seam for draft case retrieval
+- typed lifecycle event history for submitted, drafted, and safety-evaluated cases
 - request correlation headers
 - structured request logging for completed and failed requests
-- request-aware error envelopes for invalid and unexpected case-intake failures
+- request-aware error envelopes for invalid and unexpected intake or retrieval failures
 - health, readiness, and metrics endpoints
 
 ## Current Non-Goals
@@ -81,8 +82,9 @@ The repository now includes a dedicated provenance workflow at `.github/workflow
 - GET /api/v1/manifest
 - POST /api/v1/cases
 - GET /api/v1/cases/:caseId
+- GET /api/v1/cases/:caseId/events
 
-`/readyz` returns product and runtime status. Error responses for case intake and case retrieval include request and correlation identifiers to simplify operator debugging.
+`/readyz` returns product and runtime status. Retrieval can return `status="Submitted"` with `assessment=null` for persisted cases that exist before draft completion. Error responses for case intake, case retrieval, and case event retrieval include request and correlation identifiers to simplify operator debugging.
 
 ## Repository Governance
 

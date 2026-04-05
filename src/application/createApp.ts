@@ -13,6 +13,9 @@ import type {
   GenerateMammographySecondOpinionOutput,
   MammographySecondOpinionCaseResponse,
 } from "./usecases/GenerateMammographySecondOpinionUseCase";
+import type {
+  MammographySecondOpinionCaseEventsResponse,
+} from "./usecases/GetMammographySecondOpinionCaseEventsUseCase";
 
 interface RequestContext {
   requestId: string;
@@ -34,6 +37,7 @@ export interface CreateAppOptions {
     input: CreateMammographyCaseRequest,
   ) => Promise<GenerateMammographySecondOpinionOutput>;
   getCaseById: (caseId: string) => Promise<MammographySecondOpinionCaseResponse | null>;
+  getCaseEventsById: (caseId: string) => Promise<MammographySecondOpinionCaseEventsResponse | null>;
 }
 
 export function createApp(options: CreateAppOptions): Express {
@@ -152,6 +156,35 @@ export function createApp(options: CreateAppOptions): Express {
           request,
           "INTERNAL_ERROR",
           "Case retrieval failed unexpectedly.",
+        ),
+      );
+    }
+  });
+
+  app.get("/api/v1/cases/:caseId/events", async (request: Request, response: Response) => {
+    try {
+      const caseId = getSingleRouteParam(request.params.caseId);
+      const output = await options.getCaseEventsById(caseId);
+
+      if (!output) {
+        response.status(404).json(
+          buildErrorEnvelope(
+            request,
+            "CASE_NOT_FOUND",
+            `Mammography case '${caseId}' was not found.`,
+          ),
+        );
+        return;
+      }
+
+      response.status(200).json(output);
+    } catch (error) {
+      logRequestFailure(request, options.logger, error);
+      response.status(500).json(
+        buildErrorEnvelope(
+          request,
+          "INTERNAL_ERROR",
+          "Case event retrieval failed unexpectedly.",
         ),
       );
     }

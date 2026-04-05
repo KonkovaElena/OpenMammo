@@ -30,7 +30,7 @@ Date: 2026-04-05
 - `src/application/createApp.ts`
   - creates the Express app
   - sets correlation headers
-  - exposes `/healthz`, `/readyz`, `/metrics`, and `/api/v1/manifest`
+  - exposes `/healthz`, `/readyz`, `/metrics`, `/api/v1/manifest`, `/api/v1/cases`, `/api/v1/cases/:caseId`, and `/api/v1/cases/:caseId/events`
 
 - `src/domain/manifest.ts`
   - declares machine-readable mission, modality boundary, safety posture, and non-goals

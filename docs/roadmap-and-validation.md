@@ -21,7 +21,7 @@ Current status:
 - domain aggregate: started
 - case intake workflow: implemented as `POST /api/v1/cases`
 - persistence seam: file-backed snapshot store with `GET /api/v1/cases/:caseId` retrieval
-- event schemas: not started
+- event schemas: implemented as typed persisted lifecycle events with `GET /api/v1/cases/:caseId/events`
 
 ## Wave 3
 

@@ -91,6 +91,122 @@ components:
           type: integer
         hasBlockingFlags:
           type: boolean
+    MammographyCaseSubmittedEvent:
+      type: object
+      required: [eventId, caseId, occurredAt, type, payload]
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        caseId:
+          type: string
+          format: uuid
+        occurredAt:
+          type: string
+          format: date-time
+        type:
+          type: string
+          const: mammography.case-submitted.v1
+        payload:
+          type: object
+          required: [modality, studyInstanceUid, standardViews, questionText, urgency]
+          properties:
+            modality:
+              type: string
+              const: FFDM
+            studyInstanceUid:
+              type: string
+            standardViews:
+              type: array
+              prefixItems:
+                - const: L-CC
+                - const: L-MLO
+                - const: R-CC
+                - const: R-MLO
+              minItems: 4
+              maxItems: 4
+            questionText:
+              type: string
+            urgency:
+              type: string
+              enum: [routine, urgent, stat]
+    MammographyDraftGeneratedEvent:
+      type: object
+      required: [eventId, caseId, occurredAt, type, payload]
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        caseId:
+          type: string
+          format: uuid
+        occurredAt:
+          type: string
+          format: date-time
+        type:
+          type: string
+          const: mammography.draft-generated.v1
+        payload:
+          type: object
+          required: [biradsCategory, confidenceBand, outputMode, modelId, latencyMs]
+          properties:
+            biradsCategory:
+              type: string
+              enum: ['0', '1', '2', '3', '4', '5', '6']
+            confidenceBand:
+              type: string
+              enum: [high, moderate, low]
+            outputMode:
+              type: string
+              const: draft-only
+            modelId:
+              type: string
+            latencyMs:
+              type: integer
+    MammographySafetyFlagsAppliedEvent:
+      type: object
+      required: [eventId, caseId, occurredAt, type, payload]
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        caseId:
+          type: string
+          format: uuid
+        occurredAt:
+          type: string
+          format: date-time
+        type:
+          type: string
+          const: mammography.safety-flags-applied.v1
+        payload:
+          type: object
+          required: [flagCount, hasBlockingFlags, flags]
+          properties:
+            flagCount:
+              type: integer
+            hasBlockingFlags:
+              type: boolean
+            flags:
+              type: array
+              items:
+                type: object
+                required: [code, severity, description, blocksReview]
+                properties:
+                  code:
+                    type: string
+                  severity:
+                    type: string
+                    enum: [info, warning, critical]
+                  description:
+                    type: string
+                  blocksReview:
+                    type: boolean
+    MammographyCaseLifecycleEvent:
+      oneOf:
+        - $ref: '#/components/schemas/MammographyCaseSubmittedEvent'
+        - $ref: '#/components/schemas/MammographyDraftGeneratedEvent'
+        - $ref: '#/components/schemas/MammographySafetyFlagsAppliedEvent'
     CaseResponse:
       type: object
       required: [caseId, status, assessment, safety]
@@ -102,9 +218,24 @@ components:
           type: string
           enum: [Submitted, AwaitingReview]
         assessment:
-          $ref: '#/components/schemas/CaseAssessment'
+          anyOf:
+            - $ref: '#/components/schemas/CaseAssessment'
+            - type: 'null'
         safety:
           $ref: '#/components/schemas/CaseSafety'
+    CaseEventsResponse:
+      type: object
+      required: [caseId, count, events]
+      properties:
+        caseId:
+          type: string
+          format: uuid
+        count:
+          type: integer
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/MammographyCaseLifecycleEvent'
 paths:
   /healthz:
     get:
@@ -191,6 +322,35 @@ paths:
                 $ref: '#/components/schemas/ErrorEnvelope'
         '500':
           description: Unexpected server-side failure during case retrieval
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/cases/{caseId}/events:
+    get:
+      operationId: getCaseEventsById
+      parameters:
+        - name: caseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Persisted lifecycle events for the mammography case
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseEventsResponse'
+        '404':
+          description: Case not found in the configured persistence store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: Unexpected server-side failure during case event retrieval
           content:
             application/json:
               schema:

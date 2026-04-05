@@ -36,11 +36,15 @@ Implemented in the second wave 2 slice:
 - file-backed persistence seam for draft mammography cases
 - readback route for persisted draft retrieval after restart
 
+Implemented in the third wave 2 slice:
+- typed lifecycle events for case submission, draft generation, and safety evaluation
+- persisted event-history retrieval route for case audits and downstream integration
+
 Not implemented yet:
 - image QC
 - inference orchestration
 - radiologist review workflow
-- production-grade persistence
+- production-grade database-backed persistence
 - report export
 - archive integration
 

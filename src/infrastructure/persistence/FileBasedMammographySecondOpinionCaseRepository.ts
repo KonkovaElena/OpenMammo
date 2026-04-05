@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { MammographySecondOpinionCase } from "../../domain/mammography/MammographySecondOpinionCase";
 import {
@@ -9,22 +9,26 @@ import type { IMammographySecondOpinionCaseRepository } from "../../domain/mammo
 
 export class FileBasedMammographySecondOpinionCaseRepository
   implements IMammographySecondOpinionCaseRepository {
+  private writeQueue: Promise<void> = Promise.resolve();
+
   constructor(
     private readonly storePath: string,
   ) {}
 
   async save(caseAggregate: MammographySecondOpinionCase): Promise<void> {
-    const snapshots = await this.readSnapshots();
-    const nextSnapshot = caseAggregate.toSnapshot();
-    const existingIndex = snapshots.findIndex((snapshot) => snapshot.caseId === nextSnapshot.caseId);
+    return this.enqueueWrite(async () => {
+      const snapshots = await this.readSnapshots();
+      const nextSnapshot = caseAggregate.toSnapshot();
+      const existingIndex = snapshots.findIndex((snapshot) => snapshot.caseId === nextSnapshot.caseId);
 
-    if (existingIndex >= 0) {
-      snapshots[existingIndex] = nextSnapshot;
-    } else {
-      snapshots.push(nextSnapshot);
-    }
+      if (existingIndex >= 0) {
+        snapshots[existingIndex] = nextSnapshot;
+      } else {
+        snapshots.push(nextSnapshot);
+      }
 
-    await this.writeSnapshots(snapshots);
+      await this.writeSnapshots(snapshots);
+    });
   }
 
   async getById(caseId: string): Promise<MammographySecondOpinionCase | null> {
@@ -49,11 +53,21 @@ export class FileBasedMammographySecondOpinionCaseRepository
   }
 
   private async writeSnapshots(snapshots: MammographySecondOpinionCaseSnapshot[]): Promise<void> {
+    const tempPath = `${this.storePath}.tmp`;
+
     await mkdir(dirname(this.storePath), { recursive: true });
-    await writeFile(this.storePath, `${JSON.stringify(snapshots, null, 2)}\n`, "utf8");
+    await writeFile(tempPath, `${JSON.stringify(snapshots, null, 2)}\n`, "utf8");
+    await rename(tempPath, this.storePath);
+  }
+
+  private async enqueueWrite(operation: () => Promise<void>): Promise<void> {
+    const nextWrite = this.writeQueue.then(operation, operation);
+
+    this.writeQueue = nextWrite.catch(() => undefined);
+    await nextWrite;
   }
 }
 
 function isNodeError(error: unknown): error is NodeJS.ErrnoException {
-  return error instanceof Error;
+  return error instanceof Error && "code" in error;
 }

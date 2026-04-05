@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type {
+  MammographyCaseLifecycleEvent,
   MammographyClinicalQuestion,
   MammographyDraftAssessment,
   MammographyExam,
@@ -18,6 +19,7 @@ export class MammographySecondOpinionCase {
   private _modelId: string | null;
   private _latencyMs: number | null;
   private _safetyFlags: MammographySafetyFlag[];
+  private _events: MammographyCaseLifecycleEvent[];
 
   private constructor(snapshot: MammographySecondOpinionCaseSnapshot) {
     this._caseId = snapshot.caseId;
@@ -26,6 +28,7 @@ export class MammographySecondOpinionCase {
     this._modelId = snapshot.modelId;
     this._latencyMs = snapshot.latencyMs;
     this._safetyFlags = snapshot.safetyFlags;
+    this._events = snapshot.events;
     this._exam = snapshot.exam;
     this._clinicalQuestion = snapshot.clinicalQuestion;
   }
@@ -34,8 +37,10 @@ export class MammographySecondOpinionCase {
     exam: MammographyExam,
     clinicalQuestion: MammographyClinicalQuestion,
   ): MammographySecondOpinionCase {
+    const caseId = randomUUID();
+
     return new MammographySecondOpinionCase({
-      caseId: randomUUID(),
+      caseId,
       exam,
       clinicalQuestion,
       status: "Submitted",
@@ -43,6 +48,7 @@ export class MammographySecondOpinionCase {
       modelId: null,
       latencyMs: null,
       safetyFlags: [],
+      events: [createCaseSubmittedEvent(caseId, exam, clinicalQuestion)],
     });
   }
 
@@ -59,10 +65,18 @@ export class MammographySecondOpinionCase {
     this._modelId = modelId;
     this._latencyMs = latencyMs;
     this._status = "AwaitingReview";
+    this._events = [
+      ...this._events,
+      createDraftGeneratedEvent(this._caseId, assessment, modelId, latencyMs),
+    ];
   }
 
   applySafetyFlags(flags: readonly MammographySafetyFlag[]): void {
     this._safetyFlags = [...this._safetyFlags, ...flags];
+    this._events = [
+      ...this._events,
+      createSafetyFlagsAppliedEvent(this._caseId, flags),
+    ];
   }
 
   get caseId(): string {
@@ -89,6 +103,10 @@ export class MammographySecondOpinionCase {
     return this._safetyFlags;
   }
 
+  get events(): readonly MammographyCaseLifecycleEvent[] {
+    return this._events;
+  }
+
   get hasBlockingFlags(): boolean {
     return this._safetyFlags.some((flag) => flag.blocksReview);
   }
@@ -103,6 +121,65 @@ export class MammographySecondOpinionCase {
       modelId: this._modelId,
       latencyMs: this._latencyMs,
       safetyFlags: this._safetyFlags,
+      events: this._events,
     };
   }
+}
+
+function createCaseSubmittedEvent(
+  caseId: string,
+  exam: MammographyExam,
+  clinicalQuestion: MammographyClinicalQuestion,
+): MammographyCaseLifecycleEvent {
+  return {
+    eventId: randomUUID(),
+    caseId,
+    occurredAt: new Date().toISOString(),
+    type: "mammography.case-submitted.v1",
+    payload: {
+      modality: exam.modality,
+      studyInstanceUid: exam.studyInstanceUid,
+      standardViews: exam.standardViews,
+      questionText: clinicalQuestion.questionText,
+      urgency: clinicalQuestion.urgency,
+    },
+  };
+}
+
+function createDraftGeneratedEvent(
+  caseId: string,
+  assessment: MammographyDraftAssessment,
+  modelId: string,
+  latencyMs: number,
+): MammographyCaseLifecycleEvent {
+  return {
+    eventId: randomUUID(),
+    caseId,
+    occurredAt: new Date().toISOString(),
+    type: "mammography.draft-generated.v1",
+    payload: {
+      biradsCategory: assessment.biradsCategory,
+      confidenceBand: assessment.confidenceBand,
+      outputMode: assessment.outputMode,
+      modelId,
+      latencyMs,
+    },
+  };
+}
+
+function createSafetyFlagsAppliedEvent(
+  caseId: string,
+  flags: readonly MammographySafetyFlag[],
+): MammographyCaseLifecycleEvent {
+  return {
+    eventId: randomUUID(),
+    caseId,
+    occurredAt: new Date().toISOString(),
+    type: "mammography.safety-flags-applied.v1",
+    payload: {
+      flagCount: flags.length,
+      hasBlockingFlags: flags.some((flag) => flag.blocksReview),
+      flags: [...flags],
+    },
+  };
 }

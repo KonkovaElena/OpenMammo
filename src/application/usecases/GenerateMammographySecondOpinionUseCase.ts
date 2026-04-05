@@ -14,7 +14,7 @@ export interface MammographySecondOpinionCaseResponse {
     summary: string;
     confidenceBand: string;
     outputMode: "draft-only";
-  };
+  } | null;
   safety: {
     flagCount: number;
     hasBlockingFlags: boolean;
@@ -58,19 +58,17 @@ export class GenerateMammographySecondOpinionUseCase {
 export function mapMammographySecondOpinionCaseToResponse(
   caseAggregate: MammographySecondOpinionCase,
 ): MammographySecondOpinionCaseResponse {
-  if (!caseAggregate.assessment) {
-    throw new Error(`Case '${caseAggregate.caseId}' does not have a completed draft assessment.`);
-  }
-
   return {
     caseId: caseAggregate.caseId,
     status: caseAggregate.status,
-    assessment: {
-      biradsCategory: caseAggregate.assessment.biradsCategory,
-      summary: caseAggregate.assessment.summary,
-      confidenceBand: caseAggregate.assessment.confidenceBand,
-      outputMode: caseAggregate.assessment.outputMode,
-    },
+    assessment: caseAggregate.assessment
+      ? {
+          biradsCategory: caseAggregate.assessment.biradsCategory,
+          summary: caseAggregate.assessment.summary,
+          confidenceBand: caseAggregate.assessment.confidenceBand,
+          outputMode: caseAggregate.assessment.outputMode,
+        }
+      : null,
     safety: {
       flagCount: caseAggregate.safetyFlags.length,
       hasBlockingFlags: caseAggregate.hasBlockingFlags,
