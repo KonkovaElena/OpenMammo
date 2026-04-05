@@ -543,6 +543,82 @@ components:
               type: string
             reviewReady:
               type: boolean
+    PythonSidecarIntegrationSeamResponse:
+      type: object
+      required: [sidecar, health, readiness, manifest, capabilities]
+      properties:
+        sidecar:
+          type: object
+          required: [baseUrl, configured, reachable]
+          properties:
+            baseUrl:
+              anyOf:
+                - type: string
+                - type: 'null'
+            configured:
+              type: boolean
+            reachable:
+              type: boolean
+        health:
+          type: object
+          required: [status, mode]
+          properties:
+            status:
+              anyOf:
+                - type: string
+                - type: 'null'
+            mode:
+              anyOf:
+                - type: string
+                - type: 'null'
+        readiness:
+          type: object
+          required: [status, acceptingJobs]
+          properties:
+            status:
+              anyOf:
+                - type: string
+                - type: 'null'
+            acceptingJobs:
+              anyOf:
+                - type: boolean
+                - type: 'null'
+        manifest:
+          type: object
+          required: [productName, outputShape, outputMode]
+          properties:
+            productName:
+              anyOf:
+                - type: string
+                - type: 'null'
+            outputShape:
+              anyOf:
+                - type: string
+                - type: 'null'
+            outputMode:
+              anyOf:
+                - type: string
+                - type: 'null'
+        capabilities:
+          type: object
+          required: [mode, implementedTasks, plannedTasks, docs]
+          properties:
+            mode:
+              anyOf:
+                - type: string
+                - type: 'null'
+            implementedTasks:
+              type: array
+              items:
+                type: string
+            plannedTasks:
+              type: array
+              items:
+                type: string
+            docs:
+              type: array
+              items:
+                type: string
     CaseEventsResponse:
       type: object
       required: [caseId, count, events]
@@ -595,6 +671,22 @@ paths:
       responses:
         '200':
           description: Machine-readable scope manifest
+  /api/v1/integration-seams/python-sidecar:
+    get:
+      operationId: renderPythonSidecarIntegrationSeam
+      responses:
+        '200':
+          description: Live integration seam for the optional Python sidecar scaffold
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PythonSidecarIntegrationSeamResponse'
+        '500':
+          description: Unexpected server-side failure during sidecar seam rendering
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/cases:
     post:
       operationId: createCase

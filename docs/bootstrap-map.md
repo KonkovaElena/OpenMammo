@@ -19,18 +19,18 @@ Date: 2026-04-05
   - handles `SIGINT` and `SIGTERM`
 
 - `src/config.ts`
-  - validates `NODE_ENV`, `HOST`, `PORT`, `CASE_STORE_PATH`, `ORTHANC_BASE_URL`, `DICOMWEB_SOURCE_NAME`, and `METRICS_ENABLED`
+  - validates `NODE_ENV`, `HOST`, `PORT`, `CASE_STORE_PATH`, `ORTHANC_BASE_URL`, `DICOMWEB_SOURCE_NAME`, `PYTHON_SIDECAR_BASE_URL`, and `METRICS_ENABLED`
 
 - `src/bootstrap.ts`
   - acts as the composition root
   - creates the Prometheus registry
   - creates the request counter
-  - wires the app with runtime dependencies, including the configured case repository, QC policy, baseline draft orchestrator path, clinician review finalization use case, report rendering use case, delivery tracking use case, the OHIF review seam use case, and the DICOMweb archive seam use case
+  - wires the app with runtime dependencies, including the configured case repository, QC policy, baseline draft orchestrator path, clinician review finalization use case, report rendering use case, delivery tracking use case, the OHIF review seam use case, the DICOMweb archive seam use case, and the Python sidecar integration seam use case
 
 - `src/application/createApp.ts`
   - creates the Express app
   - sets correlation headers
-  - exposes `/healthz`, `/readyz`, `/metrics`, `/api/v1/manifest`, `/api/v1/cases`, `/api/v1/cases/:caseId/review`, `/api/v1/cases/:caseId/report`, `/api/v1/cases/:caseId/report/export`, `/api/v1/cases/:caseId/deliver`, `/api/v1/cases/:caseId/review-seams/ohif`, `/api/v1/cases/:caseId/archive-seams/dicomweb`, `/api/v1/cases/:caseId`, and `/api/v1/cases/:caseId/events`
+  - exposes `/healthz`, `/readyz`, `/metrics`, `/api/v1/manifest`, `/api/v1/integration-seams/python-sidecar`, `/api/v1/cases`, `/api/v1/cases/:caseId/review`, `/api/v1/cases/:caseId/report`, `/api/v1/cases/:caseId/report/export`, `/api/v1/cases/:caseId/deliver`, `/api/v1/cases/:caseId/review-seams/ohif`, `/api/v1/cases/:caseId/archive-seams/dicomweb`, `/api/v1/cases/:caseId`, and `/api/v1/cases/:caseId/events`
   - returns persisted QC, generation, review, and delivery summaries alongside case retrieval responses
 
 - `src/domain/manifest.ts`

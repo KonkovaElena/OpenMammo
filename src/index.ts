@@ -11,6 +11,7 @@ const { app } = bootstrap({
   caseStorePath: config.CASE_STORE_PATH,
   orthancBaseUrl: config.ORTHANC_BASE_URL,
   dicomwebSourceName: config.DICOMWEB_SOURCE_NAME,
+  pythonSidecarBaseUrl: config.PYTHON_SIDECAR_BASE_URL,
 });
 
 const server = app.listen(config.PORT, config.HOST, () => {

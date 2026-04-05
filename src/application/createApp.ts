@@ -17,6 +17,7 @@ import { MammographyCaseDeliveryConflictError } from "./usecases/DeliverMammogra
 import { MammographyCaseReviewConflictError } from "./usecases/FinalizeMammographySecondOpinionReviewUseCase";
 import type { MammographyDicomwebArchiveSeamResponse } from "./usecases/RenderDicomwebArchiveSeamUseCase";
 import type { MammographyOhifReviewSeamResponse } from "./usecases/RenderOhifReviewSeamUseCase";
+import type { PythonSidecarIntegrationSeamResponse } from "./usecases/RenderPythonSidecarIntegrationSeamUseCase";
 import { MammographyCaseReportNotReadyError, type MammographyRenderedReportResponse } from "./usecases/RenderMammographyCaseReportUseCase";
 import type {
   GenerateMammographySecondOpinionOutput,
@@ -58,6 +59,7 @@ export interface CreateAppOptions {
   ) => Promise<MammographySecondOpinionCaseResponse | null>;
   renderOhifReviewSeam: (caseId: string) => Promise<MammographyOhifReviewSeamResponse | null>;
   renderDicomwebArchiveSeam: (caseId: string) => Promise<MammographyDicomwebArchiveSeamResponse | null>;
+  renderPythonSidecarIntegrationSeam: () => Promise<PythonSidecarIntegrationSeamResponse>;
 }
 
 export function createApp(options: CreateAppOptions): Express {
@@ -150,6 +152,22 @@ export function createApp(options: CreateAppOptions): Express {
 
   app.get("/api/v1/manifest", (_request: Request, response: Response) => {
     response.status(200).json(standaloneManifest);
+  });
+
+  app.get("/api/v1/integration-seams/python-sidecar", async (request: Request, response: Response) => {
+    try {
+      const output = await options.renderPythonSidecarIntegrationSeam();
+      response.status(200).json(output);
+    } catch (error) {
+      logRequestFailure(request, options.logger, error);
+      response.status(500).json(
+        buildErrorEnvelope(
+          request,
+          "INTERNAL_ERROR",
+          "Python sidecar integration seam rendering failed unexpectedly.",
+        ),
+      );
+    }
   });
 
   app.get("/api/v1/cases/:caseId", async (request: Request, response: Response) => {

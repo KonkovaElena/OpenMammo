@@ -56,6 +56,7 @@ Current status:
 
 - OHIF-compatible review seam: implemented as a read-only OHIF launch manifest using `StudyInstanceUIDs` and DICOMweb-style datasource placeholders
 - Orthanc and DICOMweb-compatible archive seam: implemented as an env-backed handoff manifest that derives `dicom-web` and `wado` roots from `ORTHANC_BASE_URL`
+- Node-to-sidecar integration seam: implemented as a live probe of the scaffold sidecar `healthz`, `readyz`, `manifest`, and `capabilities` endpoints when `PYTHON_SIDECAR_BASE_URL` is configured
 
 ## Validation Boundary
 

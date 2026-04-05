@@ -12,6 +12,7 @@ Date: 2026-04-05
 | `CASE_STORE_PATH` | no | `artifacts/cases/mammography-second-opinion-cases.json` under the current working directory | File-backed persistence path for stored draft mammography cases. |
 | `ORTHANC_BASE_URL` | no | unset | Base URL of an Orthanc HTTP server; when set, the standalone derives DICOMweb and WADO-URI roots for archive and OHIF handoff seams. |
 | `DICOMWEB_SOURCE_NAME` | no | `dicomweb` | Source name emitted in OHIF and archive seam manifests for the DICOMweb datasource. |
+| `PYTHON_SIDECAR_BASE_URL` | no | unset | Base URL of the optional FastAPI sidecar; when set, the standalone probes sidecar health, readiness, manifest, and capabilities via the integration seam route. |
 | `METRICS_ENABLED` | no | `true` | Enables or disables the `/metrics` endpoint. |
 
 ## Current Behavior
@@ -22,6 +23,7 @@ Date: 2026-04-05
 - `CASE_STORE_PATH` controls where the standalone persists and reloads draft-only mammography cases.
 - `ORTHANC_BASE_URL` is normalized to derive `.../dicom-web` for QIDO/WADO-RS and `.../wado` for WADO-URI in the archive-compatible handoff routes.
 - `DICOMWEB_SOURCE_NAME` lets operators align the emitted seam manifests with the configured OHIF datasource name.
+- `PYTHON_SIDECAR_BASE_URL` enables a live handshake probe against the sidecar scaffold endpoints without implying that imaging inference jobs are implemented.
 - `METRICS_ENABLED=false` disables the metrics route and returns `404` from `/metrics`.
 
 ## Safety Boundary

@@ -6,6 +6,7 @@ import { FinalizeMammographySecondOpinionReviewUseCase } from "./application/use
 import { RenderDicomwebArchiveSeamUseCase } from "./application/usecases/RenderDicomwebArchiveSeamUseCase";
 import { RenderOhifReviewSeamUseCase } from "./application/usecases/RenderOhifReviewSeamUseCase";
 import { RenderMammographyCaseReportUseCase } from "./application/usecases/RenderMammographyCaseReportUseCase";
+import { RenderPythonSidecarIntegrationSeamUseCase } from "./application/usecases/RenderPythonSidecarIntegrationSeamUseCase";
 import { GetMammographySecondOpinionCaseUseCase } from "./application/usecases/GetMammographySecondOpinionCaseUseCase";
 import { GetMammographySecondOpinionCaseEventsUseCase } from "./application/usecases/GetMammographySecondOpinionCaseEventsUseCase";
 import { GenerateMammographySecondOpinionUseCase } from "./application/usecases/GenerateMammographySecondOpinionUseCase";
@@ -30,6 +31,7 @@ export interface BootstrapOptions {
   caseStorePath?: string;
   orthancBaseUrl?: string;
   dicomwebSourceName?: string;
+  pythonSidecarBaseUrl?: string;
 }
 
 export interface BootstrapResult {
@@ -64,6 +66,9 @@ export function bootstrap(options: BootstrapOptions = {}): BootstrapResult {
   const deliverReportUseCase = new DeliverMammographyCaseReportUseCase(repository);
   const renderOhifReviewSeamUseCase = new RenderOhifReviewSeamUseCase(repository, archiveConfig);
   const renderDicomwebArchiveSeamUseCase = new RenderDicomwebArchiveSeamUseCase(repository, archiveConfig);
+  const renderPythonSidecarIntegrationSeamUseCase = new RenderPythonSidecarIntegrationSeamUseCase(
+    options.pythonSidecarBaseUrl,
+  );
 
   const app = createApp({
     metricsEnabled: options.metricsEnabled ?? true,
@@ -80,6 +85,7 @@ export function bootstrap(options: BootstrapOptions = {}): BootstrapResult {
     deliverCaseReport: (caseId, deliveryInput) => deliverReportUseCase.execute(caseId, deliveryInput),
     renderOhifReviewSeam: (caseId) => renderOhifReviewSeamUseCase.execute(caseId),
     renderDicomwebArchiveSeam: (caseId) => renderDicomwebArchiveSeamUseCase.execute(caseId),
+    renderPythonSidecarIntegrationSeam: () => renderPythonSidecarIntegrationSeamUseCase.execute(),
   });
 
   return {

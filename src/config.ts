@@ -15,6 +15,7 @@ const envSchema = z.object({
   CASE_STORE_PATH: z.string().min(1).default(defaultCaseStorePath),
   ORTHANC_BASE_URL: z.string().url().optional(),
   DICOMWEB_SOURCE_NAME: z.string().min(1).default("dicomweb"),
+  PYTHON_SIDECAR_BASE_URL: z.string().url().optional(),
   METRICS_ENABLED: z
     .string()
     .optional()

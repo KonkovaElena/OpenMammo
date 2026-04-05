@@ -76,10 +76,14 @@ Implemented in the report export slice:
 - plain-text attachment export route for finalized clinician reports
 - export behavior that reuses the finalized report rendering contract and preserves the same safety gate
 
+Implemented in the sidecar integration slice:
+- global Node-to-sidecar integration seam that probes the FastAPI scaffold endpoints
+- optional live sidecar handshake gated by `PYTHON_SIDECAR_BASE_URL` without claiming production imaging inference
+
 Not implemented yet:
 - deeper image QC
 - deeper inference orchestration and multi-engine routing
-- live Python imaging inference and Node-to-sidecar integration
+- live Python imaging inference
 - production-grade database-backed persistence
 - archive integration
 

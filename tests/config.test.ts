@@ -25,3 +25,11 @@ test("loadConfig exposes optional Orthanc base URL and DICOMweb source name", ()
   assert.equal(config.ORTHANC_BASE_URL, "http://localhost:8042/");
   assert.equal(config.DICOMWEB_SOURCE_NAME, "orthanc");
 });
+
+test("loadConfig exposes optional Python sidecar base URL", () => {
+  const config = loadConfig({
+    PYTHON_SIDECAR_BASE_URL: "http://127.0.0.1:8040",
+  });
+
+  assert.equal(config.PYTHON_SIDECAR_BASE_URL, "http://127.0.0.1:8040");
+});

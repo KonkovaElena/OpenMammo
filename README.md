@@ -19,6 +19,7 @@ This standalone is intentionally narrow. The first implemented wave is a bootabl
 - delivery tracking for finalized reports with persisted delivery metadata
 - OHIF-compatible review seam as a launch manifest with StudyInstanceUID handoff
 - Orthanc and DICOMweb-compatible archive seam with env-backed roots
+- Node-to-sidecar integration seam with optional live health and capability probe
 - separate Python imaging sidecar scaffold for future compute workloads
 - file-backed persistence seam for draft case retrieval
 - typed lifecycle event history for submitted, QC-evaluated, drafted, safety-evaluated, orchestrated, and finalized cases
@@ -90,6 +91,7 @@ The repository now includes a dedicated provenance workflow at `.github/workflow
 - GET /readyz
 - GET /metrics
 - GET /api/v1/manifest
+- GET /api/v1/integration-seams/python-sidecar
 - POST /api/v1/cases
 - POST /api/v1/cases/:caseId/review
 - GET /api/v1/cases/:caseId/report
@@ -100,7 +102,7 @@ The repository now includes a dedicated provenance workflow at `.github/workflow
 - GET /api/v1/cases/:caseId
 - GET /api/v1/cases/:caseId/events
 
-`/readyz` returns product and runtime status. Retrieval can return `status="Submitted"` with `assessment=null`, `qc=null`, `generation=null`, `review=null`, and `delivery=null` for persisted cases that exist before QC, draft completion, clinician finalization, or tracked delivery. Case responses now include QC, generation, review, and delivery summaries across the workflow. Finalized cases can also render a deterministic text report artifact via `/api/v1/cases/:caseId/report` and download the same artifact as a plain-text attachment via `/api/v1/cases/:caseId/report/export`. Cases at any persisted state can expose an OHIF-compatible launch manifest via `/api/v1/cases/:caseId/review-seams/ohif`, and that manifest switches from placeholder roots to real DICOMweb roots when `ORTHANC_BASE_URL` is configured. The dedicated archive seam at `/api/v1/cases/:caseId/archive-seams/dicomweb` exposes the same Orthanc-compatible handoff contract directly. Error responses for case intake, case retrieval, case review finalization, case report rendering, case report export, case delivery tracking, OHIF seam rendering, DICOMweb archive seam rendering, and case event retrieval include request and correlation identifiers to simplify operator debugging.
+`/readyz` returns product and runtime status. Retrieval can return `status="Submitted"` with `assessment=null`, `qc=null`, `generation=null`, `review=null`, and `delivery=null` for persisted cases that exist before QC, draft completion, clinician finalization, or tracked delivery. Case responses now include QC, generation, review, and delivery summaries across the workflow. Finalized cases can also render a deterministic text report artifact via `/api/v1/cases/:caseId/report` and download the same artifact as a plain-text attachment via `/api/v1/cases/:caseId/report/export`. Cases at any persisted state can expose an OHIF-compatible launch manifest via `/api/v1/cases/:caseId/review-seams/ohif`, and that manifest switches from placeholder roots to real DICOMweb roots when `ORTHANC_BASE_URL` is configured. The dedicated archive seam at `/api/v1/cases/:caseId/archive-seams/dicomweb` exposes the same Orthanc-compatible handoff contract directly. The global seam `/api/v1/integration-seams/python-sidecar` probes the current FastAPI sidecar scaffold when `PYTHON_SIDECAR_BASE_URL` is configured, but it does not claim that imaging inference jobs are implemented yet. Error responses for case intake, case retrieval, case review finalization, case report rendering, case report export, case delivery tracking, OHIF seam rendering, DICOMweb archive seam rendering, and case event retrieval include request and correlation identifiers to simplify operator debugging.
 
 ## Python Sidecar Scaffold
 
