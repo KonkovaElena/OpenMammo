@@ -154,6 +154,18 @@ export const mammographyCaseDeliveredEventSchema = mammographyCaseEventBaseSchem
   payload: mammographyCaseDeliverySummarySchema,
 });
 
+export const mammographyReportIntegritySealSchema = z.object({
+  algorithm: z.literal("SHA-256"),
+  reportHash: z.string().regex(/^[a-f0-9]{64}$/),
+  sealedAt: z.string().datetime(),
+  sealedBy: z.string().min(1).max(200),
+});
+
+export const mammographyReportIntegritySealedEventSchema = mammographyCaseEventBaseSchema.extend({
+  type: z.literal("mammography.report-integrity-sealed.v1"),
+  payload: mammographyReportIntegritySealSchema,
+});
+
 export const mammographyCaseLifecycleEventSchema = z.discriminatedUnion("type", [
   mammographyCaseSubmittedEventSchema,
   mammographyExamQcEvaluatedEventSchema,
@@ -162,6 +174,7 @@ export const mammographyCaseLifecycleEventSchema = z.discriminatedUnion("type", 
   mammographyDraftOrchestrationCompletedEventSchema,
   mammographyCaseReviewFinalizedEventSchema,
   mammographyCaseDeliveredEventSchema,
+  mammographyReportIntegritySealedEventSchema,
 ]);
 
 export const mammographySecondOpinionCaseSnapshotSchema = z.object({
@@ -176,6 +189,7 @@ export const mammographySecondOpinionCaseSnapshotSchema = z.object({
   generation: mammographyDraftGenerationSummarySchema.nullable().default(null),
   review: mammographyCaseReviewSummarySchema.nullable().default(null),
   delivery: mammographyCaseDeliverySummarySchema.nullable().default(null),
+  integritySeal: mammographyReportIntegritySealSchema.nullable().default(null),
   safetyFlags: z.array(mammographySafetyFlagSchema),
   events: z.array(mammographyCaseLifecycleEventSchema).default([]),
 });
@@ -183,6 +197,10 @@ export const mammographySecondOpinionCaseSnapshotSchema = z.object({
 export const createMammographyCaseRequestSchema = z.object({
   exam: mammographyExamSchema,
   clinicalQuestion: mammographyClinicalQuestionSchema,
+});
+
+export const mammographyReportSealInputSchema = z.object({
+  sealedBy: z.string().min(1).max(200),
 });
 
 export type MammographyExam = z.infer<typeof mammographyExamSchema>;
@@ -198,5 +216,6 @@ export type MammographyExamQualityFinding = z.infer<typeof mammographyExamQualit
 export type MammographyExamQualitySummary = z.infer<typeof mammographyExamQualitySummarySchema>;
 export type MammographySafetyFlag = z.infer<typeof mammographySafetyFlagSchema>;
 export type MammographyCaseLifecycleEvent = z.infer<typeof mammographyCaseLifecycleEventSchema>;
+export type MammographyReportIntegritySeal = z.infer<typeof mammographyReportIntegritySealSchema>;
 export type MammographySecondOpinionCaseSnapshot = z.infer<typeof mammographySecondOpinionCaseSnapshotSchema>;
 export type CreateMammographyCaseRequest = z.infer<typeof createMammographyCaseRequestSchema>;

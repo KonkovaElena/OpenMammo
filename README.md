@@ -137,3 +137,6 @@ This repository is not a diagnostic device. Any future model outputs are intende
 - docs/roadmap-and-validation.md
 - docs/bootstrap-map.md
 - docs/env-contract.md
+- docs/verification/release-validation-packet.md
+- docs/verification/launch-evidence-index.md
+- docs/verification/hosted-evidence-capture-template.md

@@ -9,6 +9,7 @@ import {
   createMammographyCaseRequestSchema,
   mammographyCaseDeliveryInputSchema,
   mammographyCaseReviewInputSchema,
+  mammographyReportSealInputSchema,
   type CreateMammographyCaseRequest,
   type MammographyCaseDeliveryInput,
   type MammographyCaseReviewInput,
@@ -19,6 +20,20 @@ import type { MammographyDicomwebArchiveSeamResponse } from "./usecases/RenderDi
 import type { MammographyOhifReviewSeamResponse } from "./usecases/RenderOhifReviewSeamUseCase";
 import type { PythonSidecarIntegrationSeamResponse } from "./usecases/RenderPythonSidecarIntegrationSeamUseCase";
 import { MammographyCaseReportNotReadyError, type MammographyRenderedReportResponse } from "./usecases/RenderMammographyCaseReportUseCase";
+import {
+  MammographyCaseReportSealConflictError,
+  MammographyCaseReportSealNotReadyError,
+  type MammographyReportSealInput,
+  type MammographyReportSealResponse,
+} from "./usecases/SealMammographyCaseReportUseCase";
+import {
+  MammographyCaseReportNotSealedError,
+  type MammographyReportIntegrityResponse,
+} from "./usecases/VerifyMammographyCaseReportIntegrityUseCase";
+import type {
+  ListMammographyCasesInput,
+  ListMammographyCasesOutput,
+} from "./usecases/ListMammographyCasesUseCase";
 import type {
   GenerateMammographySecondOpinionOutput,
   MammographySecondOpinionCaseResponse,
@@ -60,6 +75,12 @@ export interface CreateAppOptions {
   renderOhifReviewSeam: (caseId: string) => Promise<MammographyOhifReviewSeamResponse | null>;
   renderDicomwebArchiveSeam: (caseId: string) => Promise<MammographyDicomwebArchiveSeamResponse | null>;
   renderPythonSidecarIntegrationSeam: () => Promise<PythonSidecarIntegrationSeamResponse>;
+  sealCaseReport: (
+    caseId: string,
+    sealInput: MammographyReportSealInput,
+  ) => Promise<MammographyReportSealResponse | null>;
+  verifyCaseReportIntegrity: (caseId: string) => Promise<MammographyReportIntegrityResponse | null>;
+  listCases: (input: ListMammographyCasesInput) => Promise<ListMammographyCasesOutput>;
 }
 
 export function createApp(options: CreateAppOptions): Express {
@@ -165,6 +186,27 @@ export function createApp(options: CreateAppOptions): Express {
           request,
           "INTERNAL_ERROR",
           "Python sidecar integration seam rendering failed unexpectedly.",
+        ),
+      );
+    }
+  });
+
+  app.get("/api/v1/cases", async (request: Request, response: Response) => {
+    try {
+      const limitRaw = typeof request.query.limit === "string" ? Number(request.query.limit) : 50;
+      const offsetRaw = typeof request.query.offset === "string" ? Number(request.query.offset) : 0;
+      const limit = Number.isFinite(limitRaw) && limitRaw >= 1 && limitRaw <= 100 ? Math.floor(limitRaw) : 50;
+      const offset = Number.isFinite(offsetRaw) && offsetRaw >= 0 ? Math.floor(offsetRaw) : 0;
+
+      const output = await options.listCases({ limit, offset });
+      response.status(200).json(output);
+    } catch (error) {
+      logRequestFailure(request, options.logger, error);
+      response.status(500).json(
+        buildErrorEnvelope(
+          request,
+          "INTERNAL_ERROR",
+          "Case listing failed unexpectedly.",
         ),
       );
     }
@@ -366,6 +408,110 @@ export function createApp(options: CreateAppOptions): Express {
           request,
           "INTERNAL_ERROR",
           "Case report export failed unexpectedly.",
+        ),
+      );
+    }
+  });
+
+  app.post("/api/v1/cases/:caseId/report/seal", async (request: Request, response: Response) => {
+    try {
+      const caseId = getSingleRouteParam(request.params.caseId);
+      const sealInput = mammographyReportSealInputSchema.parse(request.body);
+      const output = await options.sealCaseReport(caseId, sealInput);
+
+      if (!output) {
+        response.status(404).json(
+          buildErrorEnvelope(
+            request,
+            "CASE_NOT_FOUND",
+            `Mammography case '${caseId}' was not found.`,
+          ),
+        );
+        return;
+      }
+
+      response.status(201).json(output);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        response.status(400).json(
+          buildErrorEnvelope(
+            request,
+            "INVALID_REQUEST_BODY",
+            "Seal body does not match the report seal contract.",
+            { issues: error.issues },
+          ),
+        );
+        return;
+      }
+
+      if (error instanceof MammographyCaseReportSealNotReadyError) {
+        response.status(409).json(
+          buildErrorEnvelope(
+            request,
+            "CASE_REPORT_SEAL_NOT_READY",
+            error.message,
+          ),
+        );
+        return;
+      }
+
+      if (error instanceof MammographyCaseReportSealConflictError) {
+        response.status(409).json(
+          buildErrorEnvelope(
+            request,
+            "CASE_REPORT_SEAL_CONFLICT",
+            error.message,
+          ),
+        );
+        return;
+      }
+
+      logRequestFailure(request, options.logger, error);
+      response.status(500).json(
+        buildErrorEnvelope(
+          request,
+          "INTERNAL_ERROR",
+          "Case report sealing failed unexpectedly.",
+        ),
+      );
+    }
+  });
+
+  app.get("/api/v1/cases/:caseId/report/integrity", async (request: Request, response: Response) => {
+    try {
+      const caseId = getSingleRouteParam(request.params.caseId);
+      const output = await options.verifyCaseReportIntegrity(caseId);
+
+      if (!output) {
+        response.status(404).json(
+          buildErrorEnvelope(
+            request,
+            "CASE_NOT_FOUND",
+            `Mammography case '${caseId}' was not found.`,
+          ),
+        );
+        return;
+      }
+
+      response.status(200).json(output);
+    } catch (error) {
+      if (error instanceof MammographyCaseReportNotSealedError) {
+        response.status(409).json(
+          buildErrorEnvelope(
+            request,
+            "CASE_REPORT_NOT_SEALED",
+            error.message,
+          ),
+        );
+        return;
+      }
+
+      logRequestFailure(request, options.logger, error);
+      response.status(500).json(
+        buildErrorEnvelope(
+          request,
+          "INTERNAL_ERROR",
+          "Case report integrity verification failed unexpectedly.",
         ),
       );
     }

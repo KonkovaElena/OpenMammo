@@ -80,6 +80,12 @@ Implemented in the sidecar integration slice:
 - global Node-to-sidecar integration seam that probes the FastAPI scaffold endpoints
 - optional live sidecar handshake gated by `PYTHON_SIDECAR_BASE_URL` without claiming production imaging inference
 
+Implemented in the report integrity slice:
+- SHA-256 cryptographic sealing of finalized clinician reports with sealed-by attribution
+- deterministic integrity verification that re-computes the hash and compares it against the stored seal
+- report-integrity-sealed lifecycle event persisted in the case event history
+- idempotency guard that rejects double-sealing with a 409 conflict response
+
 Not implemented yet:
 - deeper image QC
 - deeper inference orchestration and multi-engine routing

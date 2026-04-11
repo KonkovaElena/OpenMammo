@@ -7,6 +7,7 @@ __pycache__/
 *.py[cod]
 artifacts/
 __*.txt
+_test_*.txt
 mammography-second-opinion-runtime-sbom.cdx.json
 mammography-second-opinion-dist-*.tgz
 mammography-second-opinion-artifacts.sha256

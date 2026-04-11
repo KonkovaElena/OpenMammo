@@ -10,6 +10,7 @@ import type { MammographySecondOpinionCase } from "./MammographySecondOpinionCas
 export interface IMammographySecondOpinionCaseRepository {
   save(caseAggregate: MammographySecondOpinionCase): Promise<void>;
   getById(caseId: string): Promise<MammographySecondOpinionCase | null>;
+  listAll(): Promise<MammographySecondOpinionCase[]>;
 }
 
 export interface IMammographyDraftInferenceService {

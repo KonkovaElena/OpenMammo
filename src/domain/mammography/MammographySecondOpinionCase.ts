@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import type {
   MammographyCaseDeliveryInput,
   MammographyCaseDeliverySummary,
@@ -10,6 +10,7 @@ import type {
   MammographyDraftGenerationSummary,
   MammographyExam,
   MammographyExamQualitySummary,
+  MammographyReportIntegritySeal,
   MammographySecondOpinionCaseSnapshot,
   MammographySafetyFlag,
 } from "./contracts";
@@ -28,6 +29,7 @@ export class MammographySecondOpinionCase {
   private _generation: MammographyDraftGenerationSummary | null;
   private _review: MammographyCaseReviewSummary | null;
   private _delivery: MammographyCaseDeliverySummary | null;
+  private _integritySeal: MammographyReportIntegritySeal | null;
   private _safetyFlags: MammographySafetyFlag[];
   private _events: MammographyCaseLifecycleEvent[];
 
@@ -41,6 +43,7 @@ export class MammographySecondOpinionCase {
     this._generation = snapshot.generation;
     this._review = snapshot.review;
     this._delivery = snapshot.delivery;
+    this._integritySeal = snapshot.integritySeal;
     this._safetyFlags = snapshot.safetyFlags;
     this._events = snapshot.events;
     this._exam = snapshot.exam;
@@ -65,6 +68,7 @@ export class MammographySecondOpinionCase {
       generation: null,
       review: null,
       delivery: null,
+      integritySeal: null,
       safetyFlags: [],
       events: [createCaseSubmittedEvent(caseId, exam, clinicalQuestion)],
     });
@@ -152,6 +156,30 @@ export class MammographySecondOpinionCase {
     ];
   }
 
+  sealReport(reportBody: string, sealedBy: string): void {
+    if (this._status !== "Finalized" || !this._review) {
+      throw new Error(`Cannot seal report in state '${this._status}'.`);
+    }
+
+    if (this._integritySeal) {
+      throw new Error(`Report integrity seal already exists for case '${this._caseId}'.`);
+    }
+
+    const reportHash = createHash("sha256").update(reportBody, "utf-8").digest("hex");
+    const seal: MammographyReportIntegritySeal = {
+      algorithm: "SHA-256",
+      reportHash,
+      sealedAt: new Date().toISOString(),
+      sealedBy,
+    };
+
+    this._integritySeal = seal;
+    this._events = [
+      ...this._events,
+      createReportIntegritySealedEvent(this._caseId, seal),
+    ];
+  }
+
   get caseId(): string {
     return this._caseId;
   }
@@ -188,6 +216,10 @@ export class MammographySecondOpinionCase {
     return this._delivery;
   }
 
+  get integritySeal(): MammographyReportIntegritySeal | null {
+    return this._integritySeal;
+  }
+
   get safetyFlags(): readonly MammographySafetyFlag[] {
     return this._safetyFlags;
   }
@@ -213,6 +245,7 @@ export class MammographySecondOpinionCase {
       generation: this._generation,
       review: this._review,
       delivery: this._delivery,
+      integritySeal: this._integritySeal,
       safetyFlags: this._safetyFlags,
       events: this._events,
     };
@@ -309,6 +342,19 @@ function createCaseDeliveredEvent(
     occurredAt: new Date().toISOString(),
     type: "mammography.case-delivered.v1",
     payload: deliverySummary,
+  };
+}
+
+function createReportIntegritySealedEvent(
+  caseId: string,
+  seal: MammographyReportIntegritySeal,
+): MammographyCaseLifecycleEvent {
+  return {
+    eventId: randomUUID(),
+    caseId,
+    occurredAt: new Date().toISOString(),
+    type: "mammography.report-integrity-sealed.v1",
+    payload: seal,
   };
 }
 

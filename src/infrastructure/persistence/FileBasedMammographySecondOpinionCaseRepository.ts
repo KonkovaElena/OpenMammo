@@ -38,6 +38,11 @@ export class FileBasedMammographySecondOpinionCaseRepository
     return snapshot ? MammographySecondOpinionCase.rehydrate(snapshot) : null;
   }
 
+  async listAll(): Promise<MammographySecondOpinionCase[]> {
+    const snapshots = await this.readSnapshots();
+    return snapshots.map((snapshot) => MammographySecondOpinionCase.rehydrate(snapshot));
+  }
+
   private async readSnapshots(): Promise<MammographySecondOpinionCaseSnapshot[]> {
     try {
       const raw = await readFile(this.storePath, "utf8");

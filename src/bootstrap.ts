@@ -7,6 +7,9 @@ import { RenderDicomwebArchiveSeamUseCase } from "./application/usecases/RenderD
 import { RenderOhifReviewSeamUseCase } from "./application/usecases/RenderOhifReviewSeamUseCase";
 import { RenderMammographyCaseReportUseCase } from "./application/usecases/RenderMammographyCaseReportUseCase";
 import { RenderPythonSidecarIntegrationSeamUseCase } from "./application/usecases/RenderPythonSidecarIntegrationSeamUseCase";
+import { SealMammographyCaseReportUseCase } from "./application/usecases/SealMammographyCaseReportUseCase";
+import { VerifyMammographyCaseReportIntegrityUseCase } from "./application/usecases/VerifyMammographyCaseReportIntegrityUseCase";
+import { ListMammographyCasesUseCase } from "./application/usecases/ListMammographyCasesUseCase";
 import { GetMammographySecondOpinionCaseUseCase } from "./application/usecases/GetMammographySecondOpinionCaseUseCase";
 import { GetMammographySecondOpinionCaseEventsUseCase } from "./application/usecases/GetMammographySecondOpinionCaseEventsUseCase";
 import { GenerateMammographySecondOpinionUseCase } from "./application/usecases/GenerateMammographySecondOpinionUseCase";
@@ -70,6 +73,15 @@ export function bootstrap(options: BootstrapOptions = {}): BootstrapResult {
     options.pythonSidecarBaseUrl,
   );
 
+  const renderReportBodyForSeal = async (caseId: string): Promise<string | null> => {
+    const rendered = await renderReportUseCase.execute(caseId);
+    return rendered ? rendered.report.body : null;
+  };
+
+  const sealReportUseCase = new SealMammographyCaseReportUseCase(repository, renderReportBodyForSeal);
+  const verifyReportIntegrityUseCase = new VerifyMammographyCaseReportIntegrityUseCase(repository, renderReportBodyForSeal);
+  const listCasesUseCase = new ListMammographyCasesUseCase(repository);
+
   const app = createApp({
     metricsEnabled: options.metricsEnabled ?? true,
     metricsRegistry,
@@ -86,6 +98,9 @@ export function bootstrap(options: BootstrapOptions = {}): BootstrapResult {
     renderOhifReviewSeam: (caseId) => renderOhifReviewSeamUseCase.execute(caseId),
     renderDicomwebArchiveSeam: (caseId) => renderDicomwebArchiveSeamUseCase.execute(caseId),
     renderPythonSidecarIntegrationSeam: () => renderPythonSidecarIntegrationSeamUseCase.execute(),
+    sealCaseReport: (caseId, sealInput) => sealReportUseCase.execute(caseId, sealInput),
+    verifyCaseReportIntegrity: (caseId) => verifyReportIntegrityUseCase.execute(caseId),
+    listCases: (input) => listCasesUseCase.execute(input),
   });
 
   return {
@@ -114,6 +129,12 @@ function createInMemoryRepository(): IMammographySecondOpinionCaseRepository {
     async getById(caseId) {
       const snapshot = records.get(caseId);
       return snapshot ? MammographySecondOpinionCase.rehydrate(snapshot) : null;
+    },
+
+    async listAll() {
+      return Array.from(records.values()).map((snapshot) =>
+        MammographySecondOpinionCase.rehydrate(snapshot),
+      );
     },
   };
 }

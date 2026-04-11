@@ -58,6 +58,18 @@ Current status:
 - Orthanc and DICOMweb-compatible archive seam: implemented as an env-backed handoff manifest that derives `dicom-web` and `wado` roots from `ORTHANC_BASE_URL`
 - Node-to-sidecar integration seam: implemented as a live probe of the scaffold sidecar `healthz`, `readyz`, `manifest`, and `capabilities` endpoints when `PYTHON_SIDECAR_BASE_URL` is configured
 
+## Wave 6
+
+- report integrity sealing
+- integrity verification
+- cryptographic provenance lifecycle events
+
+Current status:
+
+- report integrity sealing: implemented as SHA-256 cryptographic sealing of finalized clinician reports via `POST /api/v1/cases/:caseId/report/seal`
+- integrity verification: implemented as deterministic SHA-256 hash re-computation and comparison via `GET /api/v1/cases/:caseId/report/integrity`
+- cryptographic provenance lifecycle events: implemented as `mammography.report-integrity-sealed.v1` lifecycle events persisted in the case event history
+
 ## Validation Boundary
 
 - public datasets are acceptable for early experimentation only
