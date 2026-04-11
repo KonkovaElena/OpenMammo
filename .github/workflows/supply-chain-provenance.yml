@@ -51,21 +51,21 @@ jobs:
         run: sha256sum mammography-second-opinion-dist-${{ github.sha }}.tgz mammography-second-opinion-runtime-sbom.cdx.json > mammography-second-opinion-artifacts.sha256
 
       - name: Upload build bundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mammography-second-opinion-dist-${{ github.sha }}
           path: mammography-second-opinion-dist-${{ github.sha }}.tgz
           retention-days: 7
 
       - name: Upload SBOM
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mammography-second-opinion-runtime-sbom-${{ github.sha }}
           path: mammography-second-opinion-runtime-sbom.cdx.json
           retention-days: 7
 
       - name: Upload checksums
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mammography-second-opinion-artifacts-sha256-${{ github.sha }}
           path: mammography-second-opinion-artifacts.sha256
