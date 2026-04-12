@@ -36,6 +36,10 @@ Implemented in the second wave 2 slice:
 - file-backed persistence seam for draft mammography cases
 - readback route for persisted draft retrieval after restart
 
+Implemented in the persistence hardening slice:
+- opt-in SQLite-backed persistence for the same case repository port using Node 24 built-in `node:sqlite`
+- bootstrap disposal support so runtime shutdown and tests release SQLite file handles cleanly
+
 Implemented in the third wave 2 slice:
 - typed lifecycle events for case submission, draft generation, and safety evaluation
 - persisted event-history retrieval route for case audits and downstream integration
@@ -95,7 +99,7 @@ Not implemented yet:
 - deeper image QC
 - deeper inference orchestration and multi-engine routing
 - live Python imaging inference
-- production-grade database-backed persistence
+- production-grade multi-instance database-backed persistence
 - archive integration
 
 ## Scope Discipline

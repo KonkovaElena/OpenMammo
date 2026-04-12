@@ -13,7 +13,7 @@ It exists to keep the public-export story honest: README and authority docs shou
 | Dimension | Value |
 |-----------|-------|
 | Repository | mammography-second-opinion |
-| Repository base head | `07d1bd4db15cb89b99188dd659b4d8e5b9ef83a7` |
+| Repository base head | `98ff80714a9ddfa42e718d0706939baf24d32d5f` |
 | Node.js target | 24+ |
 | TypeScript target | 6.x |
 | Primary validation command | `npm run validate:public-export` |
@@ -25,11 +25,11 @@ It exists to keep the public-export story honest: README and authority docs shou
 
 | Metric | Value |
 |--------|-------|
-| Total node tests | 48 |
-| Passing | 48 |
+| Total node tests | 54 |
+| Passing | 54 |
 | Failing | 0 |
 | Skipped | 0 |
-| Duration | ~3.85 s |
+| Duration | ~4.44 s |
 | Runner | `node --import tsx --test tests/**/*.test.ts` via `npm run validate:public-export` |
 
 ## Build Evidence
@@ -56,6 +56,16 @@ Status: clean (`npm run build` -> `tsc -p tsconfig.json`)
 
 This verifies the sidecar scaffold routes without claiming live imaging inference.
 
+## Persistence Evidence
+
+The standalone now proves three persistence modes locally:
+
+- in-memory repository for narrow tests and ephemeral runs
+- file-backed JSON snapshot repository across runtime restarts
+- opt-in SQLite-backed repository using Node built-in `node:sqlite` across runtime restarts
+
+The SQLite path is a local durability improvement, not yet a claim of final multi-instance production persistence.
+
 ## Fresh-Install Reproduction Evidence
 
 On 2026-04-09 the standalone also passed a fresh local install path that mirrors the critical parts of the GitHub Actions `standalone-ci` job:
@@ -66,7 +76,7 @@ On 2026-04-09 the standalone also passed a fresh local install path that mirrors
 - `npm test` succeeded
 - `npm run smoke:health` succeeded
 
-This matters because the latest public `standalone-ci` run on the same repository head is still red on GitHub-hosted runners. The failure does not currently reproduce on the local fresh-install path.
+This matters because the latest recorded public `standalone-ci` evidence still points to the previous public head, and that hosted failure does not currently reproduce on the fresh local install path.
 
 ## Documentation Inventory
 
@@ -85,7 +95,7 @@ Authority docs for this validation snapshot:
 
 | Validation dimension | Artifact | Status |
 |---------------------|----------|--------|
-| Functional correctness | 48 node tests, 48 pass, 0 fail | Complete |
+| Functional correctness | 54 node tests, 54 pass, 0 fail | Complete |
 | Type safety | `npm run build` clean | Complete |
 | Public-export baseline | `npm run validate:public-export` | Complete |
 | Runtime smoke | `npm run smoke:health` | Complete |
@@ -93,18 +103,19 @@ Authority docs for this validation snapshot:
 | Python scaffold truth | `python -m unittest python_sidecar.tests.test_app` | Complete |
 | Report integrity sealing | 11 seal/integrity tests, 11 pass | Complete |
 | Case listing | 5 listing tests, 5 pass | Complete |
+| SQLite persistence seam | 2 sqlite persistence tests, 2 pass | Complete |
 | Scope honesty | manifest and authority docs align on FFDM-only clinician-in-the-loop posture | Complete |
 
 ## Known Gaps
 
 1. The Python sidecar is still a scaffold, not a live inference runtime.
-2. The standalone does not yet prove production-grade database-backed persistence.
+2. The standalone does not yet prove final multi-instance production persistence.
 3. Archive and OHIF seams are compatibility surfaces, not a full DICOM ingest or PACS closure.
-4. The current public `standalone-ci` run on `07d1bd4db15cb89b99188dd659b4d8e5b9ef83a7` is still red on GitHub-hosted runners even though the same head is green locally.
-5. The local workflow hardening for the next rerun (`FORCE_JAVASCRIPT_ACTIONS_TO_NODE24`, `actions/setup-python@v6`, immutable SHA-pinned actions, `persist-credentials: false` on checkouts, `.github/CODEOWNERS` coverage for workflow files, and a new Scorecards workflow) is prepared in the working tree but not yet reflected in hosted evidence.
+4. Hosted runtime-validation evidence is still stale relative to the new public head `98ff80714a9ddfa42e718d0706939baf24d32d5f`.
+5. The latest hosted `standalone-ci` failure remains attached to the previous public head `07d1bd4db15cb89b99188dd659b4d8e5b9ef83a7`, so the new workflow-hardening commit still needs a fresh hosted rerun.
 
 ## Interpretation
 
 The current standalone is locally verified as a truthful public export.
 
-It boots, builds, passes its node:test suite, passes a runtime health smoke, proves the separate Python sidecar scaffold contract, and also survives a fresh local install path close to the GitHub Actions validate job. The remaining gaps are split in two categories: product-depth gaps (live imaging inference, deeper archive closure, production deployment evidence) and one control-plane gap (a hosted `standalone-ci` rerun is still needed after the workflow hardening now staged locally).
+It boots, builds, passes its node:test suite, passes a runtime health smoke, proves the separate Python sidecar scaffold contract, and now also proves an opt-in SQLite persistence path across runtime restarts. The remaining gaps are split in two categories: product-depth gaps (live imaging inference, deeper archive closure, multi-instance production persistence) and one control-plane gap (a fresh hosted `standalone-ci` rerun is still needed on the new public head).

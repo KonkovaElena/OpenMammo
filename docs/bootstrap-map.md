@@ -19,13 +19,15 @@ Date: 2026-04-05
   - handles `SIGINT` and `SIGTERM`
 
 - `src/config.ts`
-  - validates `NODE_ENV`, `HOST`, `PORT`, `CASE_STORE_PATH`, `CASE_INTAKE_RATE_LIMIT_WINDOW_MS`, `CASE_INTAKE_RATE_LIMIT_MAX_REQUESTS`, `ORTHANC_BASE_URL`, `DICOMWEB_SOURCE_NAME`, `PYTHON_SIDECAR_BASE_URL`, and `METRICS_ENABLED`
+  - validates `NODE_ENV`, `HOST`, `PORT`, `CASE_STORE_BACKEND`, `CASE_STORE_PATH`, `CASE_INTAKE_RATE_LIMIT_WINDOW_MS`, `CASE_INTAKE_RATE_LIMIT_MAX_REQUESTS`, `ORTHANC_BASE_URL`, `DICOMWEB_SOURCE_NAME`, `PYTHON_SIDECAR_BASE_URL`, and `METRICS_ENABLED`
 
 - `src/bootstrap.ts`
   - acts as the composition root
   - creates the Prometheus registry
   - creates the request counter
+  - selects the configured case repository backend (`memory`, JSON file, or SQLite)
   - wires the app with runtime dependencies, including the configured case repository, QC policy, baseline draft orchestrator path, clinician review finalization use case, report rendering use case, delivery tracking use case, the OHIF review seam use case, the DICOMweb archive seam use case, and the Python sidecar integration seam use case
+  - exposes a disposal hook so shutdown can release backend resources such as SQLite handles
 
 - `src/application/createApp.ts`
   - creates the Express app

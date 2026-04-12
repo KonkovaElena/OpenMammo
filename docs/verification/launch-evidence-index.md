@@ -6,15 +6,15 @@ This file tracks the current local and hosted evidence state for Mammography Sec
 
 - Current verdict: `LOCAL_VALIDATION_GREEN_HOSTED_STANDALONE_CI_PENDING`
 - Last reviewed: 2026-04-12
-- Current boundary note: the standalone is locally validated and truthful about its FFDM-only clinician-in-the-loop scope. Hosted GitHub evidence is mixed: CodeQL and supply-chain provenance are green on the current public head, but the public `standalone-ci` run on that same head is still red, so hosted CI closure is not yet complete. A fresh local `npm ci` plus Python dependency install rerun on 2026-04-09 is green, so the current working theory is hosted-CI drift rather than a reproduced product regression.
-- Current public head: `07d1bd4db15cb89b99188dd659b4d8e5b9ef83a7`
-- Current local validation snapshot: `npm run validate:public-export` green at 48 tests, 48 pass, 0 fail, 0 skipped; `npm run smoke:health` green; `npm audit --omit=dev --audit-level=high` green with 0 vulnerabilities; `python -m unittest python_sidecar.tests.test_app` green at 3 tests, 0 failures; and a fresh local `npm ci` + `python -m pip install -r python_sidecar/requirements.txt` + build/test/smoke rerun is also green.
+- Current boundary note: the standalone is locally validated and truthful about its FFDM-only clinician-in-the-loop scope. The current public head now includes workflow hardening and an opt-in SQLite persistence seam that are green locally, but hosted workflow evidence still lags behind and is anchored to the previous public head. The current working theory remains hosted-CI drift rather than a reproduced product regression.
+- Current public head: `98ff80714a9ddfa42e718d0706939baf24d32d5f`
+- Current local validation snapshot: `npm run validate:public-export` green at 54 tests, 54 pass, 0 fail, 0 skipped; `npm run smoke:health` green; `npm audit --omit=dev --audit-level=high` green with 0 vulnerabilities; `python -m unittest python_sidecar.tests.test_app` green at 3 tests, 0 failures; and a fresh local `npm ci` + `python -m pip install -r python_sidecar/requirements.txt` + build/test/smoke rerun is also green.
 - Public repository: `https://github.com/KonkovaElena/OpenMammo`
 - Current evidence packet: `docs/verification/release-validation-packet.md`
 
 ## Hosted Workflow Snapshot
 
-Recorded hosted evidence for the current public head:
+Recorded hosted evidence for the most recently verified previous public head:
 
 1. `CodeQL` succeeded on `07d1bd4db15cb89b99188dd659b4d8e5b9ef83a7`:
   `https://github.com/KonkovaElena/OpenMammo/actions/runs/24009630266`
@@ -26,9 +26,9 @@ Recorded hosted evidence for the current public head:
 
 ## Interpretation
 
-The current public repository proves hosted static-analysis and supply-chain surfaces, but it does not yet prove a green hosted runtime-validation lane for the current public head.
+The current public repository proves strong local validation on the new head and previously proved hosted static-analysis and supply-chain surfaces on the preceding head, but it does not yet prove a green hosted runtime-validation lane for the new current public head.
 
-Local reruns on the same repository head are green, so the current open evidence question is not product-scope honesty but hosted-CI closure. Until a successful rerun of `standalone-ci` exists on `main`, the release packet should be treated as the primary current runtime evidence and the hosted workflow state as partially reconciled. The local workflow surfaces have already been hardened for the next hosted rerun by forcing JavaScript actions onto Node 24, moving `actions/setup-python` to v6, pinning workflow actions to immutable SHAs, disabling persisted checkout credentials in read-only jobs, adding `.github/CODEOWNERS` coverage for workflow files, and preparing a Scorecards code-scanning workflow.
+Local reruns on the new repository head are green, so the current open evidence question is not product-scope honesty but hosted-CI closure. Until a successful rerun of `standalone-ci` exists on `main` for `98ff80714a9ddfa42e718d0706939baf24d32d5f`, the release packet should be treated as the primary current runtime evidence and the hosted workflow state as partially reconciled. The current public head already includes the workflow hardening changes for that rerun.
 
 ## Primary Evidence Links
 

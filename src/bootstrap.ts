@@ -19,6 +19,7 @@ import { standaloneManifest, type StandaloneManifest } from "./domain/manifest";
 import { createStructuredLogger, type StructuredLogger } from "./logging";
 import { createMonitoring } from "./monitoring";
 import { FileBasedMammographySecondOpinionCaseRepository } from "./infrastructure/persistence/FileBasedMammographySecondOpinionCaseRepository";
+import { SqliteMammographySecondOpinionCaseRepository } from "./infrastructure/persistence/SqliteMammographySecondOpinionCaseRepository";
 import { MammographySecondOpinionCase } from "./domain/mammography/MammographySecondOpinionCase";
 import type {
   IMammographyDraftInferenceService,
@@ -32,6 +33,7 @@ export interface BootstrapOptions {
   isShuttingDown?: () => boolean;
   logger?: StructuredLogger;
   startedAt?: Date;
+  caseStoreBackend?: CaseStoreBackend;
   caseStorePath?: string;
   caseIntakeRateLimit?: CaseIntakeRateLimitConfig;
   orthancBaseUrl?: string;
@@ -39,10 +41,13 @@ export interface BootstrapOptions {
   pythonSidecarBaseUrl?: string;
 }
 
+export type CaseStoreBackend = "memory" | "file" | "sqlite";
+
 export interface BootstrapResult {
   app: Express;
   manifest: StandaloneManifest;
   metricsRegistry: Registry;
+  dispose: () => void;
 }
 
 export function bootstrap(options: BootstrapOptions = {}): BootstrapResult {
@@ -54,7 +59,10 @@ export function bootstrap(options: BootstrapOptions = {}): BootstrapResult {
     sourceName: options.dicomwebSourceName,
   });
 
-  const repository = createCaseRepository(options.caseStorePath);
+  const repository = createCaseRepository({
+    backend: options.caseStoreBackend,
+    caseStorePath: options.caseStorePath,
+  });
   const inferenceService = createBaselineInferenceService();
   const examQualityPolicy = createBaselineExamQualityPolicy();
   const safetyPolicy = createBaselineSafetyPolicy();
@@ -110,12 +118,36 @@ export function bootstrap(options: BootstrapOptions = {}): BootstrapResult {
     app,
     manifest: standaloneManifest,
     metricsRegistry,
+    dispose: () => closeRepository(repository),
   };
 }
 
-function createCaseRepository(caseStorePath?: string): IMammographySecondOpinionCaseRepository {
-  if (caseStorePath) {
-    return new FileBasedMammographySecondOpinionCaseRepository(caseStorePath);
+function createCaseRepository(options: {
+  backend?: CaseStoreBackend;
+  caseStorePath?: string;
+}): IMammographySecondOpinionCaseRepository {
+  if (options.backend === "memory") {
+    return createInMemoryRepository();
+  }
+
+  if (options.backend === "sqlite") {
+    if (!options.caseStorePath) {
+      throw new Error("SQLite case store backend requires CASE_STORE_PATH.");
+    }
+
+    return new SqliteMammographySecondOpinionCaseRepository(options.caseStorePath);
+  }
+
+  if (options.backend === "file") {
+    if (!options.caseStorePath) {
+      return createInMemoryRepository();
+    }
+
+    return new FileBasedMammographySecondOpinionCaseRepository(options.caseStorePath);
+  }
+
+  if (options.caseStorePath) {
+    return new FileBasedMammographySecondOpinionCaseRepository(options.caseStorePath);
   }
 
   return createInMemoryRepository();
@@ -140,6 +172,14 @@ function createInMemoryRepository(): IMammographySecondOpinionCaseRepository {
       );
     },
   };
+}
+
+function closeRepository(repository: IMammographySecondOpinionCaseRepository): void {
+  const maybeCloseableRepository = repository as IMammographySecondOpinionCaseRepository & {
+    close?: () => void;
+  };
+
+  maybeCloseableRepository.close?.();
 }
 
 function createBaselineInferenceService(): IMammographyDraftInferenceService {

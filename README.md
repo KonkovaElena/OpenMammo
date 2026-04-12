@@ -23,6 +23,7 @@ This standalone is intentionally narrow. The first implemented wave is a bootabl
 - Node-to-sidecar integration seam with optional live health and capability probe
 - separate Python imaging sidecar scaffold for future compute workloads
 - file-backed persistence seam for draft case retrieval
+- opt-in SQLite-backed persistence seam using built-in `node:sqlite` for stronger single-node durability
 - paginated case-listing workflow for lightweight operator overviews
 - typed lifecycle event history for submitted, QC-evaluated, drafted, safety-evaluated, orchestrated, finalized, delivered, and report-sealed cases
 - per-IP staging-grade case-intake rate limiting with request-aware `429` responses and `Retry-After`
@@ -77,6 +78,14 @@ docker stop mammography-second-opinion-local
 ```
 
 The container exposes the standalone on port `4030` internally. The CI workflow also runs a Linux-only container smoke job against `/healthz` and `/readyz`.
+
+## Persistence Modes
+
+- `CASE_STORE_BACKEND=file` keeps the current JSON snapshot store behavior.
+- `CASE_STORE_BACKEND=sqlite` enables a file-backed SQLite store via Node 24+ built-in `node:sqlite`.
+- `CASE_STORE_BACKEND=memory` keeps the ephemeral in-memory seam used by narrow tests and throwaway runs.
+
+The SQLite path is the smallest sound durability upgrade for the current standalone, but it is still a single-node local persistence surface rather than a final multi-instance production database architecture.
 
 ## Supply Chain Baseline
 

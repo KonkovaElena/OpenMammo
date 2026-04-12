@@ -43,3 +43,21 @@ test("loadConfig exposes case intake rate limit settings", () => {
   assert.equal(config.CASE_INTAKE_RATE_LIMIT_WINDOW_MS, 120000);
   assert.equal(config.CASE_INTAKE_RATE_LIMIT_MAX_REQUESTS, 12);
 });
+
+test("loadConfig derives a sqlite store path when the sqlite backend is selected", () => {
+  const config = loadConfig({
+    CASE_STORE_BACKEND: "sqlite",
+  });
+
+  assert.equal(config.CASE_STORE_BACKEND, "sqlite");
+  assert.match(config.CASE_STORE_PATH, /mammography-second-opinion-cases\.sqlite$/);
+});
+
+test("loadConfig preserves an explicit store path override for sqlite backend", () => {
+  const config = loadConfig({
+    CASE_STORE_BACKEND: "sqlite",
+    CASE_STORE_PATH: "custom/openmammo.sqlite",
+  });
+
+  assert.equal(config.CASE_STORE_PATH, "custom/openmammo.sqlite");
+});

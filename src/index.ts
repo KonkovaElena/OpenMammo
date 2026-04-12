@@ -5,9 +5,10 @@ const config = loadConfig();
 
 let shuttingDown = false;
 
-const { app } = bootstrap({
+const { app, dispose } = bootstrap({
   metricsEnabled: config.METRICS_ENABLED,
   isShuttingDown: () => shuttingDown,
+  caseStoreBackend: config.CASE_STORE_BACKEND,
   caseStorePath: config.CASE_STORE_PATH,
   caseIntakeRateLimit: {
     windowMs: config.CASE_INTAKE_RATE_LIMIT_WINDOW_MS,
@@ -32,6 +33,7 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
 
     shuttingDown = true;
     server.close(() => {
+      dispose();
       process.exitCode = 0;
     });
   });

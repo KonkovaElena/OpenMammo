@@ -12,6 +12,7 @@ import {
   type MammographyExam,
 } from "../src/domain/mammography/contracts";
 import { FileBasedMammographySecondOpinionCaseRepository } from "../src/infrastructure/persistence/FileBasedMammographySecondOpinionCaseRepository";
+import { SqliteMammographySecondOpinionCaseRepository } from "../src/infrastructure/persistence/SqliteMammographySecondOpinionCaseRepository";
 
 const validExam: MammographyExam = {
   studyInstanceUid: "1.2.840.10008.1.2.3.40",
@@ -237,6 +238,101 @@ test("file-backed repository serializes concurrent saves on one instance", async
 
     assert.ok(reloadedCaseA);
     assert.ok(reloadedCaseB);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("sqlite-backed repository reloads a persisted mammography case across instances", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "mammography-sqlite-persistence-"));
+  const storePath = join(tempDir, "cases.sqlite");
+
+  try {
+    const caseAggregate = MammographySecondOpinionCase.submit(validExam, validClinicalQuestion);
+    caseAggregate.applyExamQuality({
+      status: "pass",
+      findingCount: 0,
+      findings: [],
+    });
+    caseAggregate.completeDraft(validAssessment, "baseline-rule-engine:v0", 12);
+
+    const firstRepository = new SqliteMammographySecondOpinionCaseRepository(storePath);
+    await firstRepository.save(caseAggregate);
+
+    const secondRepository = new SqliteMammographySecondOpinionCaseRepository(storePath);
+    const reloadedCase = await secondRepository.getById(caseAggregate.caseId);
+    const listedCases = await secondRepository.listAll();
+
+    assert.ok(reloadedCase);
+    assert.equal(reloadedCase?.caseId, caseAggregate.caseId);
+    assert.equal(reloadedCase?.status, "AwaitingReview");
+    assert.equal(reloadedCase?.assessment?.summary, validAssessment.summary);
+    assert.equal(listedCases.length, 1);
+    assert.equal(listedCases[0]?.caseId, caseAggregate.caseId);
+
+    firstRepository.close();
+    secondRepository.close();
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("GET /api/v1/cases returns persisted sqlite-backed summaries after a bootstrap restart", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "mammography-sqlite-bootstrap-"));
+  const storePath = join(tempDir, "cases.sqlite");
+
+  try {
+    const firstBootstrap = bootstrap({
+      metricsEnabled: false,
+      isShuttingDown: () => false,
+      caseStoreBackend: "sqlite",
+      caseStorePath: storePath,
+    });
+
+    const firstCreateResponse = await request(firstBootstrap.app)
+      .post("/api/v1/cases")
+      .send({
+        exam: validExam,
+        clinicalQuestion: validClinicalQuestion,
+      });
+
+    const secondCreateResponse = await request(firstBootstrap.app)
+      .post("/api/v1/cases")
+      .send({
+        exam: {
+          ...validExam,
+          studyInstanceUid: "1.2.840.10008.1.2.3.42",
+          accessionNumber: "ACC-PERSIST-003",
+        },
+        clinicalQuestion: {
+          ...validClinicalQuestion,
+          questionText: "Persist a sqlite-backed case listing sample.",
+        },
+      });
+
+    assert.equal(firstCreateResponse.status, 201);
+    assert.equal(secondCreateResponse.status, 201);
+
+    const secondBootstrap = bootstrap({
+      metricsEnabled: false,
+      isShuttingDown: () => false,
+      caseStoreBackend: "sqlite",
+      caseStorePath: storePath,
+    });
+
+    const response = await request(secondBootstrap.app)
+      .get("/api/v1/cases")
+      .set("x-request-id", "req-sqlite-list-001");
+
+    assert.equal(response.status, 200);
+    assert.equal(response.body.total, 2);
+    assert.deepEqual(
+      response.body.cases.map((entry: { caseId: string }) => entry.caseId),
+      [firstCreateResponse.body.caseId, secondCreateResponse.body.caseId],
+    );
+
+    firstBootstrap.dispose();
+    secondBootstrap.dispose();
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
   }
