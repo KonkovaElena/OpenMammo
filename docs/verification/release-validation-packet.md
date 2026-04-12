@@ -4,7 +4,7 @@ Date: 2026-04-12
 
 ## Purpose
 
-This document links the current standalone repository head to the latest local validation results.
+This document links the latest pushed standalone repository head to the latest local validation results.
 
 It exists to keep the public-export story honest: README and authority docs should be able to point to a specific verified repository state rather than to a vague claim that the standalone is "tested".
 
@@ -13,7 +13,7 @@ It exists to keep the public-export story honest: README and authority docs shou
 | Dimension | Value |
 |-----------|-------|
 | Repository | mammography-second-opinion |
-| Repository base head | `98ff80714a9ddfa42e718d0706939baf24d32d5f` |
+| Repository validation base | pushed head `c1669711d10b95e6ae0c50d234140ff1c77312ed` |
 | Node.js target | 24+ |
 | TypeScript target | 6.x |
 | Primary validation command | `npm run validate:public-export` |
@@ -25,11 +25,11 @@ It exists to keep the public-export story honest: README and authority docs shou
 
 | Metric | Value |
 |--------|-------|
-| Total node tests | 54 |
-| Passing | 54 |
+| Total node tests | 58 |
+| Passing | 58 |
 | Failing | 0 |
 | Skipped | 0 |
-| Duration | ~4.44 s |
+| Duration | ~1.35 s |
 | Runner | `node --import tsx --test tests/**/*.test.ts` via `npm run validate:public-export` |
 
 ## Build Evidence
@@ -76,7 +76,7 @@ On 2026-04-09 the standalone also passed a fresh local install path that mirrors
 - `npm test` succeeded
 - `npm run smoke:health` succeeded
 
-This matters because the latest recorded public `standalone-ci` evidence still points to the previous public head, and that hosted failure does not currently reproduce on the fresh local install path.
+This matters because the latest public `standalone-ci` evidence for the current head now exists and still fails, but the failure does not currently reproduce on the fresh local install path.
 
 ## Documentation Inventory
 
@@ -90,12 +90,13 @@ Authority docs for this validation snapshot:
 - `docs/bootstrap-map.md`
 - `docs/env-contract.md`
 - `docs/verification/release-validation-packet.md`
+- `docs/verification/safety-invariants.md`
 
 ## Validation Completeness Matrix
 
 | Validation dimension | Artifact | Status |
 |---------------------|----------|--------|
-| Functional correctness | 54 node tests, 54 pass, 0 fail | Complete |
+| Functional correctness | 58 node tests, 58 pass, 0 fail | Complete |
 | Type safety | `npm run build` clean | Complete |
 | Public-export baseline | `npm run validate:public-export` | Complete |
 | Runtime smoke | `npm run smoke:health` | Complete |
@@ -104,6 +105,7 @@ Authority docs for this validation snapshot:
 | Report integrity sealing | 11 seal/integrity tests, 11 pass | Complete |
 | Case listing | 5 listing tests, 5 pass | Complete |
 | SQLite persistence seam | 2 sqlite persistence tests, 2 pass | Complete |
+| Safety invariants | 4 invariant tests, 4 pass | Complete |
 | Scope honesty | manifest and authority docs align on FFDM-only clinician-in-the-loop posture | Complete |
 
 ## Known Gaps
@@ -111,11 +113,11 @@ Authority docs for this validation snapshot:
 1. The Python sidecar is still a scaffold, not a live inference runtime.
 2. The standalone does not yet prove final multi-instance production persistence.
 3. Archive and OHIF seams are compatibility surfaces, not a full DICOM ingest or PACS closure.
-4. Hosted runtime-validation evidence is still stale relative to the new public head `98ff80714a9ddfa42e718d0706939baf24d32d5f`.
-5. The latest hosted `standalone-ci` failure remains attached to the previous public head `07d1bd4db15cb89b99188dd659b4d8e5b9ef83a7`, so the new workflow-hardening commit still needs a fresh hosted rerun.
+4. Hosted runtime-validation still fails on the current public head `c1669711d10b95e6ae0c50d234140ff1c77312ed`: `standalone-ci` run `24304513781` fails in the `Test` step on both `ubuntu-latest` and `windows-latest`, so `container-smoke` is skipped.
+5. Hosted `Scorecards` also fails on the current public head: run `24304513778` fails during `Run analysis`, while `CodeQL` run `24304513780` and `Supply Chain Provenance` run `24304513789` succeed.
 
 ## Interpretation
 
 The current standalone is locally verified as a truthful public export.
 
-It boots, builds, passes its node:test suite, passes a runtime health smoke, proves the separate Python sidecar scaffold contract, and now also proves an opt-in SQLite persistence path across runtime restarts. The remaining gaps are split in two categories: product-depth gaps (live imaging inference, deeper archive closure, multi-instance production persistence) and one control-plane gap (a fresh hosted `standalone-ci` rerun is still needed on the new public head).
+It boots, builds, passes its node:test suite, passes a runtime health smoke, proves the separate Python sidecar scaffold contract, and now also proves an opt-in SQLite persistence path across runtime restarts. The remaining gaps are split in two categories: product-depth gaps (live imaging inference, deeper archive closure, multi-instance production persistence) and control-plane gaps (hosted `standalone-ci` still fails in the test phase despite local green reruns, and the new Scorecards lane is also red).

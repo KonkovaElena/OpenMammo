@@ -6,29 +6,32 @@ This file tracks the current local and hosted evidence state for Mammography Sec
 
 - Current verdict: `LOCAL_VALIDATION_GREEN_HOSTED_STANDALONE_CI_PENDING`
 - Last reviewed: 2026-04-12
-- Current boundary note: the standalone is locally validated and truthful about its FFDM-only clinician-in-the-loop scope. The current public head now includes workflow hardening and an opt-in SQLite persistence seam that are green locally, but hosted workflow evidence still lags behind and is anchored to the previous public head. The current working theory remains hosted-CI drift rather than a reproduced product regression.
-- Current public head: `98ff80714a9ddfa42e718d0706939baf24d32d5f`
-- Current local validation snapshot: `npm run validate:public-export` green at 54 tests, 54 pass, 0 fail, 0 skipped; `npm run smoke:health` green; `npm audit --omit=dev --audit-level=high` green with 0 vulnerabilities; `python -m unittest python_sidecar.tests.test_app` green at 3 tests, 0 failures; and a fresh local `npm ci` + `python -m pip install -r python_sidecar/requirements.txt` + build/test/smoke rerun is also green.
+- Current boundary note: the standalone is locally validated and truthful about its FFDM-only clinician-in-the-loop scope. The latest pushed public head now includes workflow hardening, an opt-in SQLite persistence seam, and explicit safety-invariants coverage. Hosted workflow evidence has caught up to that head and is mixed rather than stale: `CodeQL` and `Supply Chain Provenance` are green, but `standalone-ci` and `Scorecards` are red. The current working theory remains hosted-CI drift or hosted-only workflow behavior rather than a reproduced local product regression.
+- Current public head: `c1669711d10b95e6ae0c50d234140ff1c77312ed`
+- Current local validation snapshot: `npm run validate:public-export` green at 58 tests, 58 pass, 0 fail, 0 skipped; `npm run smoke:health` green; `npm audit --omit=dev --audit-level=high` green with 0 vulnerabilities; `python -m unittest python_sidecar.tests.test_app` green at 3 tests, 0 failures; and a fresh local `npm ci` + `python -m pip install -r python_sidecar/requirements.txt` + build/test/smoke rerun is also green.
 - Public repository: `https://github.com/KonkovaElena/OpenMammo`
 - Current evidence packet: `docs/verification/release-validation-packet.md`
 
 ## Hosted Workflow Snapshot
 
-Recorded hosted evidence for the most recently verified previous public head:
+Recorded hosted evidence for the current public head `c1669711d10b95e6ae0c50d234140ff1c77312ed`:
 
-1. `CodeQL` succeeded on `07d1bd4db15cb89b99188dd659b4d8e5b9ef83a7`:
-  `https://github.com/KonkovaElena/OpenMammo/actions/runs/24009630266`
-2. `Supply Chain Provenance` succeeded on `07d1bd4db15cb89b99188dd659b4d8e5b9ef83a7`:
-  `https://github.com/KonkovaElena/OpenMammo/actions/runs/24009630263`
-3. `standalone-ci` failed on `07d1bd4db15cb89b99188dd659b4d8e5b9ef83a7`:
-  `https://github.com/KonkovaElena/OpenMammo/actions/runs/24009630264`
-4. The `container-smoke` job was skipped because the matrix `validate` job in `standalone-ci` failed on both `ubuntu-latest` and `windows-latest`.
+1. `CodeQL` succeeded on `c1669711d10b95e6ae0c50d234140ff1c77312ed`:
+  `https://github.com/KonkovaElena/OpenMammo/actions/runs/24304513780`
+2. `Supply Chain Provenance` succeeded on `c1669711d10b95e6ae0c50d234140ff1c77312ed`:
+  `https://github.com/KonkovaElena/OpenMammo/actions/runs/24304513789`
+3. `standalone-ci` failed on `c1669711d10b95e6ae0c50d234140ff1c77312ed`:
+  `https://github.com/KonkovaElena/OpenMammo/actions/runs/24304513781`
+4. Within `standalone-ci`, both `Validate (ubuntu-latest)` and `Validate (windows-latest)` reached the `Test` step before failing with exit code `1`, so `Container smoke` was skipped.
+5. `Scorecards` failed on `c1669711d10b95e6ae0c50d234140ff1c77312ed`:
+  `https://github.com/KonkovaElena/OpenMammo/actions/runs/24304513778`
+6. The public workflow summaries expose Node 20 deprecation warnings for JavaScript actions, but those warnings alone do not explain the current `standalone-ci` test-step failure.
 
 ## Interpretation
 
-The current public repository proves strong local validation on the new head and previously proved hosted static-analysis and supply-chain surfaces on the preceding head, but it does not yet prove a green hosted runtime-validation lane for the new current public head.
+The current public repository proves strong local validation on the new head and also proves green hosted static-analysis and provenance lanes on that same head, but it still does not prove a green hosted runtime-validation lane for the current public head.
 
-Local reruns on the new repository head are green, so the current open evidence question is not product-scope honesty but hosted-CI closure. Until a successful rerun of `standalone-ci` exists on `main` for `98ff80714a9ddfa42e718d0706939baf24d32d5f`, the release packet should be treated as the primary current runtime evidence and the hosted workflow state as partially reconciled. The current public head already includes the workflow hardening changes for that rerun.
+Local reruns on the new repository head are green, so the current open evidence question is not product-scope honesty but hosted-CI closure. Until a successful rerun of `standalone-ci` exists on `main` for `c1669711d10b95e6ae0c50d234140ff1c77312ed`, the release packet should be treated as the primary current runtime evidence and the hosted workflow state as partially reconciled. The best public signal available today is that hosted failure now concentrates in the matrix `Test` phase rather than in setup or build, which narrows the remaining investigation surface.
 
 ## Primary Evidence Links
 
@@ -41,4 +44,5 @@ Local reruns on the new repository head are green, so the current open evidence 
 - `docs/env-contract.md`
 - `docs/verification/release-validation-packet.md`
 - `docs/verification/launch-evidence-index.md`
+- `docs/verification/safety-invariants.md`
 - `docs/verification/hosted-evidence-capture-template.md`
