@@ -25,7 +25,10 @@ test("sbom:cyclonedx:file writes a valid CycloneDX JSON file for attestations", 
     const metadata = parsed.metadata as Record<string, unknown> | undefined;
     const component = metadata?.component as Record<string, unknown> | undefined;
 
-    assert.equal(component?.name, "mammography-second-opinion");
+    assert.equal(component?.type, "application");
+    assert.equal(component?.version, "0.1.0");
+    assert.equal(component?.["bom-ref"], "mammography-second-opinion@0.1.0");
+    assert.equal(component?.purl, "pkg:npm/mammography-second-opinion@0.1.0");
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
   }
