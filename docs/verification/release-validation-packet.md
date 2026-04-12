@@ -13,11 +13,12 @@ It exists to keep the public-export story honest: README and authority docs shou
 | Dimension | Value |
 |-----------|-------|
 | Repository | mammography-second-opinion |
-| Repository validation base | validated bearer-auth slice `39046e0` |
+| Repository validation base | current public head `0f80b71` |
 | Node.js target | 24+ |
 | TypeScript target | 6.x |
 | Primary validation command | `npm run validate:public-export` |
 | Runtime smoke command | `npm run smoke:health` |
+| Container smoke reproduction | `docker build` + `docker run -p 18080:4030` + `node scripts/smoke-health.mjs --skip-start --base-url http://127.0.0.1:18080` |
 | Python sidecar scaffold command | `python -m unittest python_sidecar.tests.test_app` |
 | Fresh-install local rerun | `npm ci` + `python -m pip install -r python_sidecar/requirements.txt` + `npm run build` + `npm test` + `npm run smoke:health` |
 
@@ -45,6 +46,16 @@ Status: clean (`npm run build` -> `tsc -p tsconfig.json`)
 - product name `mammography-second-opinion`
 - scope `FFDM`, `bilateral-four-view`
 - safety posture `reviewRequired=true`, `outputMode=draft-only`, `autonomousDiagnosis=false`
+
+## Container Smoke Evidence
+
+The exact `container-smoke` path used in `.github/workflows/ci.yml` was also reproduced locally on 2026-04-12 at head `0f80b71`:
+
+- `docker build --tag mammography-second-opinion:local-ci-smoke .` succeeded
+- `docker run -d --rm --name mammography-second-opinion-smoke -p 18080:4030 mammography-second-opinion:local-ci-smoke` succeeded
+- `node scripts/smoke-health.mjs --skip-start --base-url http://127.0.0.1:18080` returned `health.status = ok` and `ready.status = ready`
+
+This matters because `0f80b71` changes the workflow runtime itself rather than the standalone application behavior.
 
 ## Python Sidecar Scaffold Evidence
 
@@ -76,7 +87,7 @@ On 2026-04-09 the standalone also passed a fresh local install path that mirrors
 - `npm test` succeeded
 - `npm run smoke:health` succeeded
 
-This matters because the latest local validation now covers the bearer-auth hardening slice `39046e0`, while the latest fully visible hosted-green workflow snapshot still belongs to the older head `14abeb9ae7b9f80635e45853bf10a2bbbf4406e2`.
+This matters because the latest local validation now covers the current public head `0f80b71`, including the exact container-smoke workflow path, while the latest fully visible hosted-green workflow snapshot still belongs to the older head `14abeb9ae7b9f80635e45853bf10a2bbbf4406e2`.
 
 ## Documentation Inventory
 
@@ -102,6 +113,7 @@ Authority docs for this validation snapshot:
 | Type safety | `npm run build` clean | Complete |
 | Public-export baseline | `npm run validate:public-export` | Complete |
 | Runtime smoke | `npm run smoke:health` | Complete |
+| Container smoke path | exact `docker build` + `docker run` + `node scripts/smoke-health.mjs --skip-start` replay on port `18080` | Complete |
 | Runtime dependency audit | `npm audit --omit=dev --audit-level=high` clean | Complete |
 | Python scaffold truth | `python -m unittest python_sidecar.tests.test_app` | Complete |
 | Report integrity sealing | 11 seal/integrity tests, 11 pass | Complete |
@@ -118,7 +130,7 @@ Authority docs for this validation snapshot:
 1. The Python sidecar is still a scaffold, not a live inference runtime.
 2. The standalone does not yet prove final multi-instance production persistence.
 3. Archive and OHIF seams are compatibility surfaces, not a full DICOM ingest or PACS closure.
-4. Hosted workflow capture for the bearer-auth slice `39046e0` is still pending in the public GitHub Actions snapshot available to this audit pass.
+4. Hosted workflow capture for the current public head `0f80b71` is still pending in the public GitHub Actions snapshot available to this audit pass.
 5. The latest fully hosted-green snapshot is still `14abeb9ae7b9f80635e45853bf10a2bbbf4406e2`, so cross-head hosted stability is not yet proved.
 6. Dependency Review remains noisy on several Dependabot PRs, so supply-chain governance outside `main` still needs separate cleanup.
 
@@ -126,4 +138,4 @@ Authority docs for this validation snapshot:
 
 The current standalone is locally verified as a truthful public export.
 
-It boots, builds, passes its node:test suite, passes a runtime health smoke, proves the separate Python sidecar scaffold contract, proves an opt-in SQLite persistence path across runtime restarts, captures optional actor/request audit context inside lifecycle events, and now also adds an opt-in shared Bearer boundary for protected case routes. The latest fully hosted-green workflow set still belongs to an older head, while hosted capture for the bearer-auth slice is pending. The remaining gaps are therefore split between evidence timing gaps and product-depth gaps: live imaging inference, deeper archive closure, multi-instance production persistence, and stronger identity controls.
+It boots, builds, passes its node:test suite, passes a runtime health smoke, proves the separate Python sidecar scaffold contract, proves an opt-in SQLite persistence path across runtime restarts, captures optional actor/request audit context inside lifecycle events, adds an opt-in shared Bearer boundary for protected case routes, and now also has a locally reproduced exact `container-smoke` workflow path on the current public head. The latest fully hosted-green workflow set still belongs to an older head, while hosted capture for `0f80b71` is pending. The remaining gaps are therefore split between evidence timing gaps and product-depth gaps: live imaging inference, deeper archive closure, multi-instance production persistence, and stronger identity controls.
