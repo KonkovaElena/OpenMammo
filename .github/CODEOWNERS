@@ -1,0 +1,11 @@
+# Default owner for all paths
+* @KonkovaElena
+
+# CI/CD and supply-chain
+.github/ @KonkovaElena
+
+# Domain and contracts require explicit review
+src/domain/ @KonkovaElena
+
+# Python sidecar
+python_sidecar/ @KonkovaElena
