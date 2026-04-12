@@ -151,6 +151,8 @@ The repository now ships a minimal public-export governance layer:
 
 This repository is not a diagnostic device. Any future model outputs are intended to remain draft-only and require qualified clinician review before finalization or delivery.
 
+The current standalone safety boundary is also captured as explicit invariant statements in [docs/verification/safety-invariants.md](docs/verification/safety-invariants.md).
+
 ## Authority Docs
 
 - design.md
@@ -161,4 +163,5 @@ This repository is not a diagnostic device. Any future model outputs are intende
 - docs/env-contract.md
 - docs/verification/release-validation-packet.md
 - docs/verification/launch-evidence-index.md
+- docs/verification/safety-invariants.md
 - docs/verification/hosted-evidence-capture-template.md

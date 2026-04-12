@@ -6,9 +6,10 @@ The actively supported surface is the current standalone kernel in this reposito
 
 ## Current Persistence Limits
 
-- the file-backed case store is intended for draft-only standalone workflows, not as a system of record
-- writes are serialized within one Node.js process, but no cross-process lock or database-level durability guarantee exists yet
-- any future production deployment should replace the current JSON file store with a database-backed persistence layer
+- the default file-backed case store is intended for draft-only standalone workflows, not as a system of record
+- the opt-in SQLite backend improves single-node durability, but it is still a local standalone persistence surface rather than a final multi-instance production database architecture
+- writes and state transitions are not yet presented as a distributed persistence guarantee across multiple application instances
+- any future production deployment should replace or extend the current standalone persistence modes with a clearly operated database-backed architecture
 
 ## Reporting a Vulnerability
 
