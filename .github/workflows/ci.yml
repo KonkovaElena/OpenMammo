@@ -113,11 +113,31 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+
       - name: Build container image
         run: docker build --tag mammography-second-opinion:${{ github.sha }} .
 
       - name: Smoke container health endpoints
+        shell: bash
         run: |
+          set -euo pipefail
+
+          cleanup() {
+            local exit_code=$?
+
+            if docker ps -a --format '{{.Names}}' | grep -qx 'mammography-second-opinion-smoke'; then
+              if [ "$exit_code" -ne 0 ]; then
+                docker logs mammography-second-opinion-smoke || true
+              fi
+
+              docker stop mammography-second-opinion-smoke >/dev/null || true
+            fi
+          }
+
+          trap cleanup EXIT
           docker run -d --rm --name mammography-second-opinion-smoke -p 18080:4030 mammography-second-opinion:${{ github.sha }}
           node scripts/smoke-health.mjs --skip-start --base-url http://127.0.0.1:18080
-          docker stop mammography-second-opinion-smoke
