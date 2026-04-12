@@ -13,7 +13,7 @@ It exists to keep the public-export story honest: README and authority docs shou
 | Dimension | Value |
 |-----------|-------|
 | Repository | mammography-second-opinion |
-| Repository validation base | pushed head `c1669711d10b95e6ae0c50d234140ff1c77312ed` |
+| Repository validation base | pushed head `14abeb9ae7b9f80635e45853bf10a2bbbf4406e2` |
 | Node.js target | 24+ |
 | TypeScript target | 6.x |
 | Primary validation command | `npm run validate:public-export` |
@@ -76,7 +76,7 @@ On 2026-04-09 the standalone also passed a fresh local install path that mirrors
 - `npm test` succeeded
 - `npm run smoke:health` succeeded
 
-This matters because the latest public `standalone-ci` evidence for the current head now exists and still fails, but the failure does not currently reproduce on the fresh local install path.
+This matters because the latest public workflow evidence for the current head now matches the local validation story: the hosted `standalone-ci`, `Scorecards`, `CodeQL`, and `Supply Chain Provenance` lanes are all green on the same public head.
 
 ## Documentation Inventory
 
@@ -113,11 +113,11 @@ Authority docs for this validation snapshot:
 1. The Python sidecar is still a scaffold, not a live inference runtime.
 2. The standalone does not yet prove final multi-instance production persistence.
 3. Archive and OHIF seams are compatibility surfaces, not a full DICOM ingest or PACS closure.
-4. Hosted runtime-validation still fails on the current public head `c1669711d10b95e6ae0c50d234140ff1c77312ed`: `standalone-ci` run `24304513781` fails in the `Test` step on both `ubuntu-latest` and `windows-latest`, so `container-smoke` is skipped.
-5. Hosted `Scorecards` also fails on the current public head: run `24304513778` fails during `Run analysis`, while `CodeQL` run `24304513780` and `Supply Chain Provenance` run `24304513789` succeed.
+4. The hosted green state is currently demonstrated for one repository head, not yet as a multi-run stability trend across time.
+5. Dependency Review remains noisy on several Dependabot PRs, so supply-chain governance outside `main` still needs separate cleanup.
 
 ## Interpretation
 
 The current standalone is locally verified as a truthful public export.
 
-It boots, builds, passes its node:test suite, passes a runtime health smoke, proves the separate Python sidecar scaffold contract, and now also proves an opt-in SQLite persistence path across runtime restarts. The remaining gaps are split in two categories: product-depth gaps (live imaging inference, deeper archive closure, multi-instance production persistence) and control-plane gaps (hosted `standalone-ci` still fails in the test phase despite local green reruns, and the new Scorecards lane is also red).
+It boots, builds, passes its node:test suite, passes a runtime health smoke, proves the separate Python sidecar scaffold contract, and now also proves an opt-in SQLite persistence path across runtime restarts. The same public head also has green hosted `standalone-ci`, `Scorecards`, `CodeQL`, and `Supply Chain Provenance` runs. The remaining gaps are therefore primarily product-depth gaps: live imaging inference, deeper archive closure, and multi-instance production persistence.
