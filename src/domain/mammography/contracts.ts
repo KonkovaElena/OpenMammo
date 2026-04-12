@@ -92,10 +92,18 @@ export const mammographyCaseDeliverySummarySchema = mammographyCaseDeliveryInput
 
 export const mammographyCaseStatusSchema = z.enum(["Submitted", "AwaitingReview", "Finalized"]);
 
+export const mammographyEventAuditContextSchema = z.object({
+  requestId: z.string().min(1).max(128),
+  correlationId: z.string().min(1).max(128),
+  actorId: z.string().min(1).max(200).optional(),
+  actorRole: z.string().min(1).max(128).optional(),
+});
+
 const mammographyCaseEventBaseSchema = z.object({
   eventId: z.string().uuid(),
   caseId: z.string().uuid(),
   occurredAt: z.string().datetime(),
+  audit: mammographyEventAuditContextSchema.optional(),
 });
 
 export const mammographyCaseSubmittedEventSchema = mammographyCaseEventBaseSchema.extend({
@@ -226,6 +234,7 @@ export type MammographyCaseReviewSummary = z.infer<typeof mammographyCaseReviewS
 export type MammographyExamQualityFinding = z.infer<typeof mammographyExamQualityFindingSchema>;
 export type MammographyExamQualitySummary = z.infer<typeof mammographyExamQualitySummarySchema>;
 export type MammographySafetyFlag = z.infer<typeof mammographySafetyFlagSchema>;
+export type MammographyEventAuditContext = z.infer<typeof mammographyEventAuditContextSchema>;
 export type MammographyCaseLifecycleEvent = z.infer<typeof mammographyCaseLifecycleEventSchema>;
 export type MammographyReportIntegritySeal = z.infer<typeof mammographyReportIntegritySealSchema>;
 export type MammographySecondOpinionCaseSnapshot = z.infer<typeof mammographySecondOpinionCaseSnapshotSchema>;

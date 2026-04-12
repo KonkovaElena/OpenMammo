@@ -104,3 +104,44 @@ test("POST /api/v1/cases returns QC warnings when optional intake metadata is ab
   assert.equal(response.body.generation.stages.length, 3);
   assert.equal(response.body.safety.hasBlockingFlags, false);
 });
+
+test("POST /api/v1/cases persists request audit metadata into lifecycle events", async () => {
+  const { app } = bootstrap({
+    metricsEnabled: false,
+    isShuttingDown: () => false,
+  });
+
+  const createResponse = await request(app)
+    .post("/api/v1/cases")
+    .set("x-request-id", "req-create-audit-001")
+    .set("x-correlation-id", "corr-create-audit-001")
+    .set("x-actor-id", "radiologist-001")
+    .set("x-actor-role", "radiologist")
+    .send({
+      exam: {
+        studyInstanceUid: "1.2.840.10008.1.2.3.7",
+        modality: "FFDM",
+        standardViews: ["L-CC", "L-MLO", "R-CC", "R-MLO"],
+      },
+      clinicalQuestion: {
+        questionText: "Create a draft case with explicit audit metadata.",
+        urgency: "routine",
+      },
+    });
+
+  assert.equal(createResponse.status, 201);
+
+  const eventsResponse = await request(app)
+    .get(`/api/v1/cases/${createResponse.body.caseId}/events`)
+    .set("x-request-id", "req-create-audit-events-001");
+
+  assert.equal(eventsResponse.status, 200);
+  assert.ok(eventsResponse.body.events.length >= 5);
+
+  for (const event of eventsResponse.body.events) {
+    assert.equal(event.audit.requestId, "req-create-audit-001");
+    assert.equal(event.audit.correlationId, "corr-create-audit-001");
+    assert.equal(event.audit.actorId, "radiologist-001");
+    assert.equal(event.audit.actorRole, "radiologist");
+  }
+});

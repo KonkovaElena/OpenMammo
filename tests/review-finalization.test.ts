@@ -56,6 +56,9 @@ test("POST /api/v1/cases/:caseId/review finalizes a draft case and persists clin
     const reviewResponse = await request(secondRuntime.app)
       .post(`/api/v1/cases/${createResponse.body.caseId}/review`)
       .set("x-request-id", "req-review-001")
+      .set("x-correlation-id", "corr-review-001")
+      .set("x-actor-id", "radiologist-002")
+      .set("x-actor-role", "radiologist")
       .send(validReviewRequest);
 
     assert.equal(reviewResponse.status, 200);
@@ -91,6 +94,10 @@ test("POST /api/v1/cases/:caseId/review finalizes a draft case and persists clin
     assert.equal(eventsResponse.body.events.at(-1)?.type, "mammography.case-review-finalized.v1");
     assert.equal(eventsResponse.body.events.at(-1)?.payload.disposition, validReviewRequest.disposition);
     assert.equal(eventsResponse.body.events.at(-1)?.payload.reviewerName, validReviewRequest.reviewerName);
+    assert.equal(eventsResponse.body.events.at(-1)?.audit.requestId, "req-review-001");
+    assert.equal(eventsResponse.body.events.at(-1)?.audit.correlationId, "corr-review-001");
+    assert.equal(eventsResponse.body.events.at(-1)?.audit.actorId, "radiologist-002");
+    assert.equal(eventsResponse.body.events.at(-1)?.audit.actorRole, "radiologist");
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
   }

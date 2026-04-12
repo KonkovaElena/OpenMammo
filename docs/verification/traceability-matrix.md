@@ -18,16 +18,16 @@ It is intentionally small. The goal is to make the current proof chain explicit 
 | TR-004 | Report sealing must require finalization and remain single-use. | SI-004 | report sealing and integrity routes | `tests/safety-invariants.test.ts`, `tests/report-integrity.test.ts` |
 | TR-005 | Persisted case state must survive restarts in supported local modes. | Persistence controls | `src/bootstrap.ts`, `src/infrastructure/persistence/*` | `tests/persistence-seam.test.ts` |
 | TR-006 | Hosted CI and local validation must agree on the current public head. | Release evidence closure | `.github/workflows/ci.yml`, `.github/workflows/scorecards.yml`, docs verification surfaces | `docs/verification/release-validation-packet.md`, `docs/verification/launch-evidence-index.md` |
+| TR-007 | Lifecycle events should retain request and actor audit context when a caller provides it. | Optional event audit metadata capture | `src/application/createApp.ts`, `src/domain/mammography/contracts.ts`, `src/domain/mammography/MammographySecondOpinionCase.ts` | `tests/create-case.test.ts`, `tests/review-finalization.test.ts`, `tests/delivery-tracking.test.ts`, `tests/report-integrity.test.ts` |
 
 ## Open Rows
 
 The following trace rows do not exist yet and should be added before clinical deployment claims grow:
 
 1. authentication and authorization requirements
-2. actor identity capture in audit events
-3. model governance and sidecar-output provenance
-4. interoperability validation against live Orthanc and OHIF targets
-5. human-factors validation and reviewer override behavior
+2. model governance and sidecar-output provenance
+3. interoperability validation against live Orthanc and OHIF targets
+4. human-factors validation and reviewer override behavior
 
 ## Maintenance Rule
 

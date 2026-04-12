@@ -1,6 +1,7 @@
 import type {
   MammographyCaseDeliverySummary,
   CreateMammographyCaseRequest,
+  MammographyEventAuditContext,
   MammographyCaseReviewSummary,
 } from "../../domain/mammography/contracts";
 import { MammographySecondOpinionCase } from "../../domain/mammography/MammographySecondOpinionCase";
@@ -59,13 +60,18 @@ export class GenerateMammographySecondOpinionUseCase {
 
   async execute(
     input: CreateMammographyCaseRequest,
+    auditContext?: MammographyEventAuditContext,
   ): Promise<GenerateMammographySecondOpinionOutput> {
-    const mammographyCase = MammographySecondOpinionCase.submit(input.exam, input.clinicalQuestion);
+    const mammographyCase = MammographySecondOpinionCase.submit(
+      input.exam,
+      input.clinicalQuestion,
+      auditContext,
+    );
     const qcStartedAt = Date.now();
     const qcResult = await this.examQualityPolicy.evaluate(input.exam);
     const qcLatencyMs = Date.now() - qcStartedAt;
 
-    mammographyCase.applyExamQuality(qcResult.summary);
+    mammographyCase.applyExamQuality(qcResult.summary, auditContext);
 
     const inferenceResult = await this.inferenceService.generateDraft(input.exam, input.clinicalQuestion);
 
@@ -73,6 +79,7 @@ export class GenerateMammographySecondOpinionUseCase {
       inferenceResult.assessment,
       inferenceResult.modelId,
       inferenceResult.latencyMs,
+      auditContext,
     );
 
     const safetyStartedAt = Date.now();
@@ -83,7 +90,7 @@ export class GenerateMammographySecondOpinionUseCase {
     );
     const safetyLatencyMs = Date.now() - safetyStartedAt;
 
-    mammographyCase.applySafetyFlags(safetyResult.flags);
+    mammographyCase.applySafetyFlags(safetyResult.flags, auditContext);
     mammographyCase.completeDraftOrchestration({
       orchestratorId: "baseline-draft-orchestrator:v1",
       modelId: inferenceResult.modelId,
@@ -105,7 +112,7 @@ export class GenerateMammographySecondOpinionUseCase {
           latencyMs: safetyLatencyMs,
         },
       ],
-    });
+    }, auditContext);
     await this.repository.save(mammographyCase);
 
     return mapMammographySecondOpinionCaseToResponse(mammographyCase);

@@ -1,4 +1,4 @@
-import type { MammographyCaseDeliveryInput } from "../../domain/mammography/contracts";
+import type { MammographyCaseDeliveryInput, MammographyEventAuditContext } from "../../domain/mammography/contracts";
 import type { IMammographySecondOpinionCaseRepository } from "../../domain/mammography/ports";
 import {
   mapMammographySecondOpinionCaseToResponse,
@@ -20,6 +20,7 @@ export class DeliverMammographyCaseReportUseCase {
   async execute(
     caseId: string,
     deliveryInput: MammographyCaseDeliveryInput,
+    auditContext?: MammographyEventAuditContext,
   ): Promise<MammographySecondOpinionCaseResponse | null> {
     const caseAggregate = await this.repository.getById(caseId);
 
@@ -28,7 +29,7 @@ export class DeliverMammographyCaseReportUseCase {
     }
 
     try {
-      caseAggregate.recordDelivery(deliveryInput);
+      caseAggregate.recordDelivery(deliveryInput, auditContext);
     } catch (error) {
       if (error instanceof Error && (
         error.message.startsWith("Cannot record delivery in state") ||

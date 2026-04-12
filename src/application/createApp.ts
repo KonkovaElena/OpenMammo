@@ -10,6 +10,7 @@ import {
   createMammographyCaseRequestSchema,
   mammographyCaseListQuerySchema,
   mammographyCaseDeliveryInputSchema,
+  type MammographyEventAuditContext,
   mammographyCaseReviewInputSchema,
   mammographyReportSealInputSchema,
   type CreateMammographyCaseRequest,
@@ -47,6 +48,8 @@ import type {
 interface RequestContext {
   requestId: string;
   correlationId: string;
+  actorId?: string;
+  actorRole?: string;
   startedAtMs: number;
 }
 
@@ -63,17 +66,20 @@ export interface CreateAppOptions {
   caseIntakeRateLimit?: CaseIntakeRateLimitConfig;
   generateCase: (
     input: CreateMammographyCaseRequest,
+    auditContext?: MammographyEventAuditContext,
   ) => Promise<GenerateMammographySecondOpinionOutput>;
   getCaseById: (caseId: string) => Promise<MammographySecondOpinionCaseResponse | null>;
   getCaseEventsById: (caseId: string) => Promise<MammographySecondOpinionCaseEventsResponse | null>;
   finalizeCaseReview: (
     caseId: string,
     reviewInput: MammographyCaseReviewInput,
+    auditContext?: MammographyEventAuditContext,
   ) => Promise<MammographySecondOpinionCaseResponse | null>;
   renderCaseReport: (caseId: string) => Promise<MammographyRenderedReportResponse | null>;
   deliverCaseReport: (
     caseId: string,
     deliveryInput: MammographyCaseDeliveryInput,
+    auditContext?: MammographyEventAuditContext,
   ) => Promise<MammographySecondOpinionCaseResponse | null>;
   renderOhifReviewSeam: (caseId: string) => Promise<MammographyOhifReviewSeamResponse | null>;
   renderDicomwebArchiveSeam: (caseId: string) => Promise<MammographyDicomwebArchiveSeamResponse | null>;
@@ -81,6 +87,7 @@ export interface CreateAppOptions {
   sealCaseReport: (
     caseId: string,
     sealInput: MammographyReportSealInput,
+    auditContext?: MammographyEventAuditContext,
   ) => Promise<MammographyReportSealResponse | null>;
   verifyCaseReportIntegrity: (caseId: string) => Promise<MammographyReportIntegrityResponse | null>;
   listCases: (input: ListMammographyCasesInput) => Promise<ListMammographyCasesOutput>;
@@ -102,6 +109,8 @@ export function createApp(options: CreateAppOptions): Express {
     const requestContext: RequestContext = {
       requestId,
       correlationId,
+      actorId: getOptionalHeader(request, "x-actor-id"),
+      actorRole: getOptionalHeader(request, "x-actor-role"),
       startedAtMs: Date.now(),
     };
 
@@ -127,6 +136,8 @@ export function createApp(options: CreateAppOptions): Express {
         statusCode: response.statusCode,
         requestId,
         correlationId,
+        actorId: requestContext.actorId,
+        actorRole: requestContext.actorRole,
         durationMs,
       });
     });
@@ -435,7 +446,7 @@ export function createApp(options: CreateAppOptions): Express {
     try {
       const caseId = getSingleRouteParam(request.params.caseId);
       const sealInput = mammographyReportSealInputSchema.parse(request.body);
-      const output = await options.sealCaseReport(caseId, sealInput);
+      const output = await options.sealCaseReport(caseId, sealInput, buildEventAuditContext(request));
 
       if (!output) {
         response.status(404).json(
@@ -539,7 +550,7 @@ export function createApp(options: CreateAppOptions): Express {
     try {
       const caseId = getSingleRouteParam(request.params.caseId);
       const deliveryInput = mammographyCaseDeliveryInputSchema.parse(request.body);
-      const output = await options.deliverCaseReport(caseId, deliveryInput);
+      const output = await options.deliverCaseReport(caseId, deliveryInput, buildEventAuditContext(request));
 
       if (!output) {
         response.status(404).json(
@@ -592,7 +603,7 @@ export function createApp(options: CreateAppOptions): Express {
     try {
       const caseId = getSingleRouteParam(request.params.caseId);
       const reviewInput = mammographyCaseReviewInputSchema.parse(request.body);
-      const output = await options.finalizeCaseReview(caseId, reviewInput);
+      const output = await options.finalizeCaseReview(caseId, reviewInput, buildEventAuditContext(request));
 
       if (!output) {
         response.status(404).json(
@@ -673,7 +684,7 @@ export function createApp(options: CreateAppOptions): Express {
       }
 
       const input = createMammographyCaseRequestSchema.parse(request.body);
-      const output = await options.generateCase(input);
+      const output = await options.generateCase(input, buildEventAuditContext(request));
 
       response.status(201).json(output);
     } catch (error) {
@@ -721,7 +732,20 @@ function getRequestContext(request: Request): RequestContext {
   return {
     requestId,
     correlationId,
+    actorId: getOptionalHeader(request, "x-actor-id"),
+    actorRole: getOptionalHeader(request, "x-actor-role"),
     startedAtMs: Date.now(),
+  };
+}
+
+function buildEventAuditContext(request: Request): MammographyEventAuditContext {
+  const requestContext = getRequestContext(request);
+
+  return {
+    requestId: requestContext.requestId,
+    correlationId: requestContext.correlationId,
+    ...(requestContext.actorId ? { actorId: requestContext.actorId } : {}),
+    ...(requestContext.actorRole ? { actorRole: requestContext.actorRole } : {}),
   };
 }
 
@@ -734,6 +758,8 @@ function logRequestFailure(request: Request, logger: StructuredLogger, error: un
     path: request.path,
     requestId: requestContext.requestId,
     correlationId: requestContext.correlationId,
+    actorId: requestContext.actorId,
+    actorRole: requestContext.actorRole,
     errorName: error instanceof Error ? error.name : "NonErrorThrown",
     errorMessage: error instanceof Error ? error.message : "Non-error value thrown",
   });

@@ -63,6 +63,9 @@ test("POST /api/v1/cases/:caseId/deliver records a finalized case delivery and p
     const deliveryResponse = await request(runtime.app)
       .post(`/api/v1/cases/${createResponse.body.caseId}/deliver`)
       .set("x-request-id", "req-delivery-001")
+      .set("x-correlation-id", "corr-delivery-001")
+      .set("x-actor-id", "operator-001")
+      .set("x-actor-role", "workflow-operator")
       .send(validDeliveryRequest);
 
     assert.equal(deliveryResponse.status, 200);
@@ -95,6 +98,10 @@ test("POST /api/v1/cases/:caseId/deliver records a finalized case delivery and p
     assert.equal(eventsResponse.status, 200);
     assert.equal(eventsResponse.body.events.at(-1)?.type, "mammography.case-delivered.v1");
     assert.equal(eventsResponse.body.events.at(-1)?.payload.channel, validDeliveryRequest.channel);
+    assert.equal(eventsResponse.body.events.at(-1)?.audit.requestId, "req-delivery-001");
+    assert.equal(eventsResponse.body.events.at(-1)?.audit.correlationId, "corr-delivery-001");
+    assert.equal(eventsResponse.body.events.at(-1)?.audit.actorId, "operator-001");
+    assert.equal(eventsResponse.body.events.at(-1)?.audit.actorRole, "workflow-operator");
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
   }

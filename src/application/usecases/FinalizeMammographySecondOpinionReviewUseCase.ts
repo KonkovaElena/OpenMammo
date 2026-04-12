@@ -1,4 +1,4 @@
-import type { MammographyCaseReviewInput } from "../../domain/mammography/contracts";
+import type { MammographyCaseReviewInput, MammographyEventAuditContext } from "../../domain/mammography/contracts";
 import type { IMammographySecondOpinionCaseRepository } from "../../domain/mammography/ports";
 import {
   mapMammographySecondOpinionCaseToResponse,
@@ -20,6 +20,7 @@ export class FinalizeMammographySecondOpinionReviewUseCase {
   async execute(
     caseId: string,
     reviewInput: MammographyCaseReviewInput,
+    auditContext?: MammographyEventAuditContext,
   ): Promise<MammographySecondOpinionCaseResponse | null> {
     const caseAggregate = await this.repository.getById(caseId);
 
@@ -28,7 +29,7 @@ export class FinalizeMammographySecondOpinionReviewUseCase {
     }
 
     try {
-      caseAggregate.finalizeReview(reviewInput);
+      caseAggregate.finalizeReview(reviewInput, auditContext);
     } catch (error) {
       if (error instanceof Error && error.message.startsWith("Cannot finalize review in state")) {
         throw new MammographyCaseReviewConflictError(error.message);

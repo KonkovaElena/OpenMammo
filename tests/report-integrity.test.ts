@@ -255,6 +255,10 @@ test("report-integrity-sealed lifecycle event is persisted in case event history
 
     await request(runtime.app)
       .post(`/api/v1/cases/${caseId}/report/seal`)
+      .set("x-request-id", "req-seal-events-001")
+      .set("x-correlation-id", "corr-seal-events-001")
+      .set("x-actor-id", "radiologist-003")
+      .set("x-actor-role", "radiologist")
       .send({ sealedBy: "Dr. Elena Konkova" });
 
     const eventsResponse = await request(runtime.app)
@@ -268,6 +272,10 @@ test("report-integrity-sealed lifecycle event is persisted in case event history
 
     assert.ok(sealEvent, "seal event must exist in the lifecycle event history");
     assert.equal(sealEvent.caseId, caseId);
+    assert.equal(sealEvent.audit.requestId, "req-seal-events-001");
+    assert.equal(sealEvent.audit.correlationId, "corr-seal-events-001");
+    assert.equal(sealEvent.audit.actorId, "radiologist-003");
+    assert.equal(sealEvent.audit.actorRole, "radiologist");
     assert.equal(sealEvent.payload.algorithm, "SHA-256");
     assert.match(sealEvent.payload.reportHash, /^[a-f0-9]{64}$/);
     assert.equal(sealEvent.payload.sealedBy, "Dr. Elena Konkova");

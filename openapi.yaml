@@ -4,6 +4,21 @@ info:
   version: 0.1.0
   description: FFDM mammography standalone kernel API.
 components:
+  parameters:
+    ActorIdHeader:
+      name: x-actor-id
+      in: header
+      required: false
+      schema:
+        type: string
+      description: Optional caller-supplied actor identifier persisted into lifecycle event audit metadata.
+    ActorRoleHeader:
+      name: x-actor-role
+      in: header
+      required: false
+      schema:
+        type: string
+      description: Optional caller-supplied actor role persisted into lifecycle event audit metadata.
   schemas:
     ProductInfo:
       type: object
@@ -288,6 +303,18 @@ components:
         deliveredAt:
           type: string
           format: date-time
+    EventAuditContext:
+      type: object
+      required: [requestId, correlationId]
+      properties:
+        requestId:
+          type: string
+        correlationId:
+          type: string
+        actorId:
+          type: string
+        actorRole:
+          type: string
     RenderedReport:
       type: object
       required: [format, filename, renderedAt, body]
@@ -315,6 +342,8 @@ components:
         occurredAt:
           type: string
           format: date-time
+        audit:
+          $ref: '#/components/schemas/EventAuditContext'
         type:
           type: string
           const: mammography.case-submitted.v1
@@ -354,6 +383,8 @@ components:
         occurredAt:
           type: string
           format: date-time
+        audit:
+          $ref: '#/components/schemas/EventAuditContext'
         type:
           type: string
           const: mammography.draft-generated.v1
@@ -387,6 +418,8 @@ components:
         occurredAt:
           type: string
           format: date-time
+        audit:
+          $ref: '#/components/schemas/EventAuditContext'
         type:
           type: string
           const: mammography.exam-qc-evaluated.v1
@@ -405,6 +438,8 @@ components:
         occurredAt:
           type: string
           format: date-time
+        audit:
+          $ref: '#/components/schemas/EventAuditContext'
         type:
           type: string
           const: mammography.draft-orchestration-completed.v1
@@ -423,6 +458,8 @@ components:
         occurredAt:
           type: string
           format: date-time
+        audit:
+          $ref: '#/components/schemas/EventAuditContext'
         type:
           type: string
           const: mammography.case-review-finalized.v1
@@ -441,6 +478,8 @@ components:
         occurredAt:
           type: string
           format: date-time
+        audit:
+          $ref: '#/components/schemas/EventAuditContext'
         type:
           type: string
           const: mammography.case-delivered.v1
@@ -459,6 +498,8 @@ components:
         occurredAt:
           type: string
           format: date-time
+        audit:
+          $ref: '#/components/schemas/EventAuditContext'
         type:
           type: string
           const: mammography.safety-flags-applied.v1
@@ -523,6 +564,8 @@ components:
         occurredAt:
           type: string
           format: date-time
+        audit:
+          $ref: '#/components/schemas/EventAuditContext'
         type:
           type: string
           const: mammography.report-integrity-sealed.v1
@@ -954,6 +997,9 @@ paths:
                 $ref: '#/components/schemas/ErrorEnvelope'
     post:
       operationId: createCase
+      parameters:
+        - $ref: '#/components/parameters/ActorIdHeader'
+        - $ref: '#/components/parameters/ActorRoleHeader'
       requestBody:
         required: true
         content:
@@ -1001,6 +1047,8 @@ paths:
           schema:
             type: string
             format: uuid
+        - $ref: '#/components/parameters/ActorIdHeader'
+        - $ref: '#/components/parameters/ActorRoleHeader'
       requestBody:
         required: true
         content:
@@ -1134,6 +1182,8 @@ paths:
           schema:
             type: string
             format: uuid
+        - $ref: '#/components/parameters/ActorIdHeader'
+        - $ref: '#/components/parameters/ActorRoleHeader'
       requestBody:
         required: true
         content:
@@ -1308,6 +1358,8 @@ paths:
           schema:
             type: string
             format: uuid
+        - $ref: '#/components/parameters/ActorIdHeader'
+        - $ref: '#/components/parameters/ActorRoleHeader'
       requestBody:
         required: true
         content:

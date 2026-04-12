@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import type {
   MammographyCaseDeliveryInput,
   MammographyCaseDeliverySummary,
+  MammographyEventAuditContext,
   MammographyCaseLifecycleEvent,
   MammographyCaseReviewInput,
   MammographyCaseReviewSummary,
@@ -53,6 +54,7 @@ export class MammographySecondOpinionCase {
   static submit(
     exam: MammographyExam,
     clinicalQuestion: MammographyClinicalQuestion,
+    auditContext?: MammographyEventAuditContext,
   ): MammographySecondOpinionCase {
     const caseId = randomUUID();
 
@@ -70,7 +72,7 @@ export class MammographySecondOpinionCase {
       delivery: null,
       integritySeal: null,
       safetyFlags: [],
-      events: [createCaseSubmittedEvent(caseId, exam, clinicalQuestion)],
+      events: [createCaseSubmittedEvent(caseId, exam, clinicalQuestion, auditContext)],
     });
   }
 
@@ -78,7 +80,12 @@ export class MammographySecondOpinionCase {
     return new MammographySecondOpinionCase(snapshot);
   }
 
-  completeDraft(assessment: MammographyDraftAssessment, modelId: string, latencyMs: number): void {
+  completeDraft(
+    assessment: MammographyDraftAssessment,
+    modelId: string,
+    latencyMs: number,
+    auditContext?: MammographyEventAuditContext,
+  ): void {
     if (this._status !== "Submitted") {
       throw new Error(`Cannot complete draft in state '${this._status}'.`);
     }
@@ -89,35 +96,38 @@ export class MammographySecondOpinionCase {
     this._status = "AwaitingReview";
     this._events = [
       ...this._events,
-      createDraftGeneratedEvent(this._caseId, assessment, modelId, latencyMs),
+      createDraftGeneratedEvent(this._caseId, assessment, modelId, latencyMs, auditContext),
     ];
   }
 
-  applyExamQuality(summary: MammographyExamQualitySummary): void {
+  applyExamQuality(summary: MammographyExamQualitySummary, auditContext?: MammographyEventAuditContext): void {
     this._qc = summary;
     this._events = [
       ...this._events,
-      createExamQcEvaluatedEvent(this._caseId, summary),
+      createExamQcEvaluatedEvent(this._caseId, summary, auditContext),
     ];
   }
 
-  applySafetyFlags(flags: readonly MammographySafetyFlag[]): void {
+  applySafetyFlags(flags: readonly MammographySafetyFlag[], auditContext?: MammographyEventAuditContext): void {
     this._safetyFlags = [...this._safetyFlags, ...flags];
     this._events = [
       ...this._events,
-      createSafetyFlagsAppliedEvent(this._caseId, flags),
+      createSafetyFlagsAppliedEvent(this._caseId, flags, auditContext),
     ];
   }
 
-  completeDraftOrchestration(summary: MammographyDraftGenerationSummary): void {
+  completeDraftOrchestration(
+    summary: MammographyDraftGenerationSummary,
+    auditContext?: MammographyEventAuditContext,
+  ): void {
     this._generation = summary;
     this._events = [
       ...this._events,
-      createDraftOrchestrationCompletedEvent(this._caseId, summary),
+      createDraftOrchestrationCompletedEvent(this._caseId, summary, auditContext),
     ];
   }
 
-  finalizeReview(input: MammographyCaseReviewInput): void {
+  finalizeReview(input: MammographyCaseReviewInput, auditContext?: MammographyEventAuditContext): void {
     if (this._status !== "AwaitingReview") {
       throw new Error(`Cannot finalize review in state '${this._status}'.`);
     }
@@ -131,11 +141,11 @@ export class MammographySecondOpinionCase {
     this._status = "Finalized";
     this._events = [
       ...this._events,
-      createCaseReviewFinalizedEvent(this._caseId, reviewSummary),
+      createCaseReviewFinalizedEvent(this._caseId, reviewSummary, auditContext),
     ];
   }
 
-  recordDelivery(input: MammographyCaseDeliveryInput): void {
+  recordDelivery(input: MammographyCaseDeliveryInput, auditContext?: MammographyEventAuditContext): void {
     if (this._status !== "Finalized" || !this._review) {
       throw new Error(`Cannot record delivery in state '${this._status}'.`);
     }
@@ -152,11 +162,11 @@ export class MammographySecondOpinionCase {
     this._delivery = deliverySummary;
     this._events = [
       ...this._events,
-      createCaseDeliveredEvent(this._caseId, deliverySummary),
+      createCaseDeliveredEvent(this._caseId, deliverySummary, auditContext),
     ];
   }
 
-  sealReport(reportBody: string, sealedBy: string): void {
+  sealReport(reportBody: string, sealedBy: string, auditContext?: MammographyEventAuditContext): void {
     if (this._status !== "Finalized" || !this._review) {
       throw new Error(`Cannot seal report in state '${this._status}'.`);
     }
@@ -176,7 +186,7 @@ export class MammographySecondOpinionCase {
     this._integritySeal = seal;
     this._events = [
       ...this._events,
-      createReportIntegritySealedEvent(this._caseId, seal),
+      createReportIntegritySealedEvent(this._caseId, seal, auditContext),
     ];
   }
 
@@ -256,11 +266,13 @@ function createCaseSubmittedEvent(
   caseId: string,
   exam: MammographyExam,
   clinicalQuestion: MammographyClinicalQuestion,
+  auditContext?: MammographyEventAuditContext,
 ): MammographyCaseLifecycleEvent {
   return {
     eventId: randomUUID(),
     caseId,
     occurredAt: new Date().toISOString(),
+    audit: auditContext,
     type: "mammography.case-submitted.v1",
     payload: {
       modality: exam.modality,
@@ -277,11 +289,13 @@ function createDraftGeneratedEvent(
   assessment: MammographyDraftAssessment,
   modelId: string,
   latencyMs: number,
+  auditContext?: MammographyEventAuditContext,
 ): MammographyCaseLifecycleEvent {
   return {
     eventId: randomUUID(),
     caseId,
     occurredAt: new Date().toISOString(),
+    audit: auditContext,
     type: "mammography.draft-generated.v1",
     payload: {
       biradsCategory: assessment.biradsCategory,
@@ -296,11 +310,13 @@ function createDraftGeneratedEvent(
 function createExamQcEvaluatedEvent(
   caseId: string,
   summary: MammographyExamQualitySummary,
+  auditContext?: MammographyEventAuditContext,
 ): MammographyCaseLifecycleEvent {
   return {
     eventId: randomUUID(),
     caseId,
     occurredAt: new Date().toISOString(),
+    audit: auditContext,
     type: "mammography.exam-qc-evaluated.v1",
     payload: summary,
   };
@@ -309,11 +325,13 @@ function createExamQcEvaluatedEvent(
 function createDraftOrchestrationCompletedEvent(
   caseId: string,
   summary: MammographyDraftGenerationSummary,
+  auditContext?: MammographyEventAuditContext,
 ): MammographyCaseLifecycleEvent {
   return {
     eventId: randomUUID(),
     caseId,
     occurredAt: new Date().toISOString(),
+    audit: auditContext,
     type: "mammography.draft-orchestration-completed.v1",
     payload: summary,
   };
@@ -322,11 +340,13 @@ function createDraftOrchestrationCompletedEvent(
 function createCaseReviewFinalizedEvent(
   caseId: string,
   reviewSummary: MammographyCaseReviewSummary,
+  auditContext?: MammographyEventAuditContext,
 ): MammographyCaseLifecycleEvent {
   return {
     eventId: randomUUID(),
     caseId,
     occurredAt: new Date().toISOString(),
+    audit: auditContext,
     type: "mammography.case-review-finalized.v1",
     payload: reviewSummary,
   };
@@ -335,11 +355,13 @@ function createCaseReviewFinalizedEvent(
 function createCaseDeliveredEvent(
   caseId: string,
   deliverySummary: MammographyCaseDeliverySummary,
+  auditContext?: MammographyEventAuditContext,
 ): MammographyCaseLifecycleEvent {
   return {
     eventId: randomUUID(),
     caseId,
     occurredAt: new Date().toISOString(),
+    audit: auditContext,
     type: "mammography.case-delivered.v1",
     payload: deliverySummary,
   };
@@ -348,11 +370,13 @@ function createCaseDeliveredEvent(
 function createReportIntegritySealedEvent(
   caseId: string,
   seal: MammographyReportIntegritySeal,
+  auditContext?: MammographyEventAuditContext,
 ): MammographyCaseLifecycleEvent {
   return {
     eventId: randomUUID(),
     caseId,
     occurredAt: new Date().toISOString(),
+    audit: auditContext,
     type: "mammography.report-integrity-sealed.v1",
     payload: seal,
   };
@@ -361,11 +385,13 @@ function createReportIntegritySealedEvent(
 function createSafetyFlagsAppliedEvent(
   caseId: string,
   flags: readonly MammographySafetyFlag[],
+  auditContext?: MammographyEventAuditContext,
 ): MammographyCaseLifecycleEvent {
   return {
     eventId: randomUUID(),
     caseId,
     occurredAt: new Date().toISOString(),
+    audit: auditContext,
     type: "mammography.safety-flags-applied.v1",
     payload: {
       flagCount: flags.length,

@@ -1,5 +1,5 @@
 import type { IMammographySecondOpinionCaseRepository } from "../../domain/mammography/ports";
-import type { MammographyReportIntegritySeal } from "../../domain/mammography/contracts";
+import type { MammographyEventAuditContext, MammographyReportIntegritySeal } from "../../domain/mammography/contracts";
 import { MammographyCaseReportNotReadyError } from "./RenderMammographyCaseReportUseCase";
 
 export interface MammographyReportSealInput {
@@ -34,6 +34,7 @@ export class SealMammographyCaseReportUseCase {
   async execute(
     caseId: string,
     input: MammographyReportSealInput,
+    auditContext?: MammographyEventAuditContext,
   ): Promise<MammographyReportSealResponse | null> {
     const caseAggregate = await this.repository.getById(caseId);
 
@@ -60,7 +61,7 @@ export class SealMammographyCaseReportUseCase {
     }
 
     try {
-      caseAggregate.sealReport(reportBody, input.sealedBy);
+      caseAggregate.sealReport(reportBody, input.sealedBy, auditContext);
     } catch (error) {
       if (error instanceof Error && error.message.startsWith("Cannot seal report in state")) {
         throw new MammographyCaseReportSealNotReadyError(error.message);

@@ -3,6 +3,7 @@ import type {
   MammographyDraftAssessment,
   MammographyExam,
   MammographyExamQualitySummary,
+  MammographyEventAuditContext,
   MammographySafetyFlag,
 } from "./contracts";
 import type { MammographySecondOpinionCase } from "./MammographySecondOpinionCase";
