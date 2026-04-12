@@ -95,12 +95,19 @@ Implemented in the case listing slice:
 - summary projection contract that exposes case identity, status, modality, study UID, creation timestamp, and assessment summary
 - file-backed and in-memory repository support for listing all persisted cases across runtime restarts
 
+Implemented in the first security hardening slice:
+- opt-in static Bearer authentication for `/api/v1/cases` and all nested case routes
+- RFC-6750-style Bearer challenge responses for missing, malformed, and invalid credentials
+- trusted actor identity derived from server-side auth config for protected-route audit metadata when auth is enabled
+
 Not implemented yet:
 - deeper image QC
 - deeper inference orchestration and multi-engine routing
 - live Python imaging inference
 - production-grade multi-instance database-backed persistence
 - archive integration
+- user-grade authentication and authorization
+- token rotation, delegated scopes, and external identity provider integration
 
 ## Scope Discipline
 

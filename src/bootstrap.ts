@@ -1,6 +1,6 @@
 import type { Registry } from "prom-client";
 import type { Express } from "express";
-import { createApp } from "./application/createApp";
+import { createApp, type ProtectedApiAuthConfig } from "./application/createApp";
 import type { CaseIntakeRateLimitConfig } from "./application/CaseIntakeRateLimiter";
 import { DeliverMammographyCaseReportUseCase } from "./application/usecases/DeliverMammographyCaseReportUseCase";
 import { FinalizeMammographySecondOpinionReviewUseCase } from "./application/usecases/FinalizeMammographySecondOpinionReviewUseCase";
@@ -33,6 +33,7 @@ export interface BootstrapOptions {
   isShuttingDown?: () => boolean;
   logger?: StructuredLogger;
   startedAt?: Date;
+  protectedApiAuth?: ProtectedApiAuthConfig;
   caseStoreBackend?: CaseStoreBackend;
   caseStorePath?: string;
   caseIntakeRateLimit?: CaseIntakeRateLimitConfig;
@@ -99,6 +100,7 @@ export function bootstrap(options: BootstrapOptions = {}): BootstrapResult {
     startedAt,
     logger,
     isShuttingDown: options.isShuttingDown ?? (() => false),
+    protectedApiAuth: options.protectedApiAuth,
     caseIntakeRateLimit: options.caseIntakeRateLimit,
     generateCase: (input, auditContext) => generateCaseUseCase.execute(input, auditContext),
     getCaseById: (caseId) => getCaseUseCase.execute(caseId),

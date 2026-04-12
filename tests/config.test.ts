@@ -61,3 +61,22 @@ test("loadConfig preserves an explicit store path override for sqlite backend", 
 
   assert.equal(config.CASE_STORE_PATH, "custom/openmammo.sqlite");
 });
+
+test("loadConfig exposes optional static bearer auth settings", () => {
+  const config = loadConfig({
+    AUTH_BEARER_TOKEN: "super-secret-bearer-token",
+    AUTH_BEARER_ACTOR_ID: "workflow-client",
+    AUTH_BEARER_ACTOR_ROLE: "service",
+  });
+
+  assert.equal(config.AUTH_BEARER_TOKEN, "super-secret-bearer-token");
+  assert.equal(config.AUTH_BEARER_ACTOR_ID, "workflow-client");
+  assert.equal(config.AUTH_BEARER_ACTOR_ROLE, "service");
+});
+
+test("loadConfig rejects bearer auth without trusted actor identity", () => {
+  assert.throws(
+    () => loadConfig({ AUTH_BEARER_TOKEN: "super-secret-bearer-token" }),
+    /AUTH_BEARER_ACTOR_ID is required when AUTH_BEARER_TOKEN is configured/,
+  );
+});

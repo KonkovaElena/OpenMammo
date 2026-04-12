@@ -19,6 +19,9 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   HOST: z.string().min(1).default("0.0.0.0"),
   PORT: z.coerce.number().int().positive().default(4030),
+  AUTH_BEARER_TOKEN: z.string().min(1).optional(),
+  AUTH_BEARER_ACTOR_ID: z.string().min(1).optional(),
+  AUTH_BEARER_ACTOR_ROLE: z.string().min(1).optional(),
   CASE_STORE_BACKEND: z.enum(["memory", "file", "sqlite"]).default("file"),
   CASE_STORE_PATH: z.string().min(1).optional(),
   CASE_INTAKE_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60_000),
@@ -30,6 +33,30 @@ const envSchema = z.object({
     .string()
     .optional()
     .transform((value) => value !== "false"),
+}).superRefine((env, context) => {
+  if (env.AUTH_BEARER_TOKEN && !env.AUTH_BEARER_ACTOR_ID) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["AUTH_BEARER_ACTOR_ID"],
+      message: "AUTH_BEARER_ACTOR_ID is required when AUTH_BEARER_TOKEN is configured.",
+    });
+  }
+
+  if (env.AUTH_BEARER_TOKEN && !env.AUTH_BEARER_ACTOR_ROLE) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["AUTH_BEARER_ACTOR_ROLE"],
+      message: "AUTH_BEARER_ACTOR_ROLE is required when AUTH_BEARER_TOKEN is configured.",
+    });
+  }
+
+  if (!env.AUTH_BEARER_TOKEN && (env.AUTH_BEARER_ACTOR_ID || env.AUTH_BEARER_ACTOR_ROLE)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["AUTH_BEARER_TOKEN"],
+      message: "AUTH_BEARER_TOKEN must be configured when AUTH_BEARER_ACTOR_ID or AUTH_BEARER_ACTOR_ROLE is set.",
+    });
+  }
 }).transform((env) => ({
   ...env,
   CASE_STORE_PATH:

@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { randomUUID, timingSafeEqual } from "node:crypto";
 import express, { type Express, type NextFunction, type Request, type Response } from "express";
 import helmet from "helmet";
 import { Counter, type Registry } from "prom-client";
@@ -53,6 +53,12 @@ interface RequestContext {
   startedAtMs: number;
 }
 
+export interface ProtectedApiAuthConfig {
+  bearerToken: string;
+  actorId: string;
+  actorRole: string;
+}
+
 const requestContextKey = Symbol("requestContext");
 type RequestWithContext = Request & { [requestContextKey]?: RequestContext };
 
@@ -63,6 +69,7 @@ export interface CreateAppOptions {
   startedAt: Date;
   logger: StructuredLogger;
   isShuttingDown: () => boolean;
+  protectedApiAuth?: ProtectedApiAuthConfig;
   caseIntakeRateLimit?: CaseIntakeRateLimitConfig;
   generateCase: (
     input: CreateMammographyCaseRequest,
@@ -109,8 +116,8 @@ export function createApp(options: CreateAppOptions): Express {
     const requestContext: RequestContext = {
       requestId,
       correlationId,
-      actorId: getOptionalHeader(request, "x-actor-id"),
-      actorRole: getOptionalHeader(request, "x-actor-role"),
+      actorId: options.protectedApiAuth ? undefined : getOptionalHeader(request, "x-actor-id"),
+      actorRole: options.protectedApiAuth ? undefined : getOptionalHeader(request, "x-actor-role"),
       startedAtMs: Date.now(),
     };
 
@@ -121,7 +128,9 @@ export function createApp(options: CreateAppOptions): Express {
 
     response.on("finish", () => {
       const durationMs = Date.now() - requestContext.startedAtMs;
-      const path = request.route?.path ?? request.path;
+      const path = typeof request.route?.path === "string"
+        ? request.route.path
+        : request.originalUrl.split("?")[0];
 
       options.requestCounter.inc({
         method: request.method,
@@ -144,6 +153,50 @@ export function createApp(options: CreateAppOptions): Express {
 
     next();
   });
+
+  if (options.protectedApiAuth) {
+    app.use("/api/v1/cases", (request: Request, response: Response, next: NextFunction) => {
+      const authResult = authenticateProtectedCaseRequest(request, options.protectedApiAuth!);
+
+      if (authResult.kind === "valid") {
+        setTrustedActorContext(request, options.protectedApiAuth!.actorId, options.protectedApiAuth!.actorRole);
+        next();
+        return;
+      }
+
+      response.setHeader("WWW-Authenticate", buildBearerChallenge(authResult));
+
+      if (authResult.kind === "missing") {
+        response.status(401).json(
+          buildErrorEnvelope(
+            request,
+            "AUTHENTICATION_REQUIRED",
+            "Authorization is required for protected case routes.",
+          ),
+        );
+        return;
+      }
+
+      if (authResult.kind === "malformed") {
+        response.status(400).json(
+          buildErrorEnvelope(
+            request,
+            "INVALID_AUTHORIZATION_HEADER",
+            authResult.message,
+          ),
+        );
+        return;
+      }
+
+      response.status(401).json(
+        buildErrorEnvelope(
+          request,
+          "INVALID_BEARER_TOKEN",
+          "Bearer token is invalid for this protected resource.",
+        ),
+      );
+    });
+  }
 
   app.get("/healthz", (_request: Request, response: Response) => {
     response.status(200).json({
@@ -719,6 +772,13 @@ function setRequestContext(request: Request, context: RequestContext): void {
   (request as RequestWithContext)[requestContextKey] = context;
 }
 
+function setTrustedActorContext(request: Request, actorId: string, actorRole: string): void {
+  const requestContext = getRequestContext(request);
+  requestContext.actorId = actorId;
+  requestContext.actorRole = actorRole;
+  setRequestContext(request, requestContext);
+}
+
 function getRequestContext(request: Request): RequestContext {
   const existingContext = (request as RequestWithContext)[requestContextKey];
 
@@ -747,6 +807,61 @@ function buildEventAuditContext(request: Request): MammographyEventAuditContext 
     ...(requestContext.actorId ? { actorId: requestContext.actorId } : {}),
     ...(requestContext.actorRole ? { actorRole: requestContext.actorRole } : {}),
   };
+}
+
+type ProtectedCaseAuthResult =
+  | { kind: "missing" }
+  | { kind: "malformed"; message: string }
+  | { kind: "invalid" }
+  | { kind: "valid" };
+
+function authenticateProtectedCaseRequest(
+  request: Request,
+  authConfig: ProtectedApiAuthConfig,
+): ProtectedCaseAuthResult {
+  const authorizationHeader = request.header("authorization");
+
+  if (!authorizationHeader) {
+    return { kind: "missing" };
+  }
+
+  const [scheme, token, ...rest] = authorizationHeader.trim().split(/\s+/);
+
+  if (!scheme || !token || rest.length > 0 || scheme.toLowerCase() !== "bearer") {
+    return {
+      kind: "malformed",
+      message: "Authorization header must use the format 'Bearer <token>'.",
+    };
+  }
+
+  if (!isValidBearerToken(token, authConfig.bearerToken)) {
+    return { kind: "invalid" };
+  }
+
+  return { kind: "valid" };
+}
+
+function isValidBearerToken(candidateToken: string, expectedToken: string): boolean {
+  const candidate = Buffer.from(candidateToken, "utf8");
+  const expected = Buffer.from(expectedToken, "utf8");
+
+  if (candidate.length !== expected.length) {
+    return false;
+  }
+
+  return timingSafeEqual(candidate, expected);
+}
+
+function buildBearerChallenge(authResult: Exclude<ProtectedCaseAuthResult, { kind: "valid" }>): string {
+  if (authResult.kind === "missing") {
+    return 'Bearer realm="openmammo"';
+  }
+
+  if (authResult.kind === "malformed") {
+    return `Bearer realm="openmammo", error="invalid_request", error_description="${authResult.message}"`;
+  }
+
+  return 'Bearer realm="openmammo", error="invalid_token", error_description="Bearer token is invalid for this protected resource."';
 }
 
 function logRequestFailure(request: Request, logger: StructuredLogger, error: unknown): void {

@@ -8,6 +8,13 @@ let shuttingDown = false;
 const { app, dispose } = bootstrap({
   metricsEnabled: config.METRICS_ENABLED,
   isShuttingDown: () => shuttingDown,
+  protectedApiAuth: config.AUTH_BEARER_TOKEN
+    ? {
+        bearerToken: config.AUTH_BEARER_TOKEN,
+        actorId: config.AUTH_BEARER_ACTOR_ID!,
+        actorRole: config.AUTH_BEARER_ACTOR_ROLE!,
+      }
+    : undefined,
   caseStoreBackend: config.CASE_STORE_BACKEND,
   caseStorePath: config.CASE_STORE_PATH,
   caseIntakeRateLimit: {
