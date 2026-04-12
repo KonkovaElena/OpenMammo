@@ -1,6 +1,6 @@
 # Release-Linked Validation Packet
 
-Date: 2026-04-09
+Date: 2026-04-12
 
 ## Purpose
 
@@ -25,11 +25,11 @@ It exists to keep the public-export story honest: README and authority docs shou
 
 | Metric | Value |
 |--------|-------|
-| Total node tests | 43 |
-| Passing | 43 |
+| Total node tests | 48 |
+| Passing | 48 |
 | Failing | 0 |
 | Skipped | 0 |
-| Duration | ~3.35 s |
+| Duration | ~3.85 s |
 | Runner | `node --import tsx --test tests/**/*.test.ts` via `npm run validate:public-export` |
 
 ## Build Evidence
@@ -85,12 +85,14 @@ Authority docs for this validation snapshot:
 
 | Validation dimension | Artifact | Status |
 |---------------------|----------|--------|
-| Functional correctness | 32 node tests, 32 pass, 0 fail | Complete |
+| Functional correctness | 48 node tests, 48 pass, 0 fail | Complete |
 | Type safety | `npm run build` clean | Complete |
 | Public-export baseline | `npm run validate:public-export` | Complete |
 | Runtime smoke | `npm run smoke:health` | Complete |
+| Runtime dependency audit | `npm audit --omit=dev --audit-level=high` clean | Complete |
 | Python scaffold truth | `python -m unittest python_sidecar.tests.test_app` | Complete |
 | Report integrity sealing | 11 seal/integrity tests, 11 pass | Complete |
+| Case listing | 5 listing tests, 5 pass | Complete |
 | Scope honesty | manifest and authority docs align on FFDM-only clinician-in-the-loop posture | Complete |
 
 ## Known Gaps
@@ -99,7 +101,7 @@ Authority docs for this validation snapshot:
 2. The standalone does not yet prove production-grade database-backed persistence.
 3. Archive and OHIF seams are compatibility surfaces, not a full DICOM ingest or PACS closure.
 4. The current public `standalone-ci` run on `07d1bd4db15cb89b99188dd659b4d8e5b9ef83a7` is still red on GitHub-hosted runners even though the same head is green locally.
-5. The local workflow hardening for the next rerun (`FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` plus `actions/setup-python@v6`) is prepared in the working tree but not yet reflected in hosted evidence.
+5. The local workflow hardening for the next rerun (`FORCE_JAVASCRIPT_ACTIONS_TO_NODE24`, `actions/setup-python@v6`, immutable SHA-pinned actions, `persist-credentials: false` on checkouts, `.github/CODEOWNERS` coverage for workflow files, and a new Scorecards workflow) is prepared in the working tree but not yet reflected in hosted evidence.
 
 ## Interpretation
 

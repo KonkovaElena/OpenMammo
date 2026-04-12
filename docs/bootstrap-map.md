@@ -19,7 +19,7 @@ Date: 2026-04-05
   - handles `SIGINT` and `SIGTERM`
 
 - `src/config.ts`
-  - validates `NODE_ENV`, `HOST`, `PORT`, `CASE_STORE_PATH`, `ORTHANC_BASE_URL`, `DICOMWEB_SOURCE_NAME`, `PYTHON_SIDECAR_BASE_URL`, and `METRICS_ENABLED`
+  - validates `NODE_ENV`, `HOST`, `PORT`, `CASE_STORE_PATH`, `CASE_INTAKE_RATE_LIMIT_WINDOW_MS`, `CASE_INTAKE_RATE_LIMIT_MAX_REQUESTS`, `ORTHANC_BASE_URL`, `DICOMWEB_SOURCE_NAME`, `PYTHON_SIDECAR_BASE_URL`, and `METRICS_ENABLED`
 
 - `src/bootstrap.ts`
   - acts as the composition root
@@ -30,6 +30,7 @@ Date: 2026-04-05
 - `src/application/createApp.ts`
   - creates the Express app
   - sets correlation headers
+  - applies an in-memory per-IP rate limiter to `POST /api/v1/cases`
   - exposes `/healthz`, `/readyz`, `/metrics`, `/api/v1/manifest`, `/api/v1/integration-seams/python-sidecar`, `/api/v1/cases`, `/api/v1/cases/:caseId/review`, `/api/v1/cases/:caseId/report`, `/api/v1/cases/:caseId/report/export`, `/api/v1/cases/:caseId/deliver`, `/api/v1/cases/:caseId/review-seams/ohif`, `/api/v1/cases/:caseId/archive-seams/dicomweb`, `/api/v1/cases/:caseId`, and `/api/v1/cases/:caseId/events`
   - returns persisted QC, generation, review, and delivery summaries alongside case retrieval responses
 

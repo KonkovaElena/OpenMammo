@@ -1,6 +1,6 @@
 # Roadmap And Validation
 
-Date: 2026-04-05
+Date: 2026-04-12
 
 ## Wave 1
 
@@ -69,6 +69,18 @@ Current status:
 - report integrity sealing: implemented as SHA-256 cryptographic sealing of finalized clinician reports via `POST /api/v1/cases/:caseId/report/seal`
 - integrity verification: implemented as deterministic SHA-256 hash re-computation and comparison via `GET /api/v1/cases/:caseId/report/integrity`
 - cryptographic provenance lifecycle events: implemented as `mammography.report-integrity-sealed.v1` lifecycle events persisted in the case event history
+
+## Wave 7
+
+- case listing
+- pagination
+- summary projections
+
+Current status:
+
+- case listing: implemented as `GET /api/v1/cases`
+- pagination: implemented as offset/limit query parameters with defaults `limit=50` and `offset=0` when omitted, plus request-aware 400 responses for invalid values
+- summary projections: implemented as lightweight case summaries with `caseId`, `status`, `modality`, `studyInstanceUid`, `createdAt`, and `assessmentSummary`
 
 ## Validation Boundary
 

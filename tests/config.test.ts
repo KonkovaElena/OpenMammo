@@ -33,3 +33,13 @@ test("loadConfig exposes optional Python sidecar base URL", () => {
 
   assert.equal(config.PYTHON_SIDECAR_BASE_URL, "http://127.0.0.1:8040");
 });
+
+test("loadConfig exposes case intake rate limit settings", () => {
+  const config = loadConfig({
+    CASE_INTAKE_RATE_LIMIT_WINDOW_MS: "120000",
+    CASE_INTAKE_RATE_LIMIT_MAX_REQUESTS: "12",
+  });
+
+  assert.equal(config.CASE_INTAKE_RATE_LIMIT_WINDOW_MS, 120000);
+  assert.equal(config.CASE_INTAKE_RATE_LIMIT_MAX_REQUESTS, 12);
+});

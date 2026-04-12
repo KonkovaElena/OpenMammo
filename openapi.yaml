@@ -28,6 +28,61 @@ components:
           type: boolean
         uptimeSeconds:
           type: number
+    ManifestScope:
+      type: object
+      required: [modality, examShape, standardViews]
+      properties:
+        modality:
+          type: string
+          const: FFDM
+        examShape:
+          type: string
+          const: bilateral-four-view
+        standardViews:
+          type: array
+          prefixItems:
+            - const: L-CC
+            - const: L-MLO
+            - const: R-CC
+            - const: R-MLO
+          minItems: 4
+          maxItems: 4
+    ManifestSafety:
+      type: object
+      required: [reviewRequired, outputMode, autonomousDiagnosis]
+      properties:
+        reviewRequired:
+          type: boolean
+          const: true
+        outputMode:
+          type: string
+          const: draft-only
+        autonomousDiagnosis:
+          type: boolean
+          const: false
+    ManifestResponse:
+      type: object
+      required: [product, mission, scope, safety, nonGoals]
+      properties:
+        product:
+          $ref: '#/components/schemas/ProductInfo'
+        mission:
+          type: string
+        scope:
+          $ref: '#/components/schemas/ManifestScope'
+        safety:
+          $ref: '#/components/schemas/ManifestSafety'
+        nonGoals:
+          type: array
+          items:
+            type: string
+    MetricsDisabledResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          const: disabled
     HealthResponse:
       type: object
       required: [status, product, scope, safety]
@@ -68,6 +123,11 @@ components:
               type: string
             correlationId:
               type: string
+            issues:
+              type: array
+              items:
+                type: object
+                additionalProperties: true
     CaseAssessment:
       type: object
       required: [biradsCategory, summary, confidenceBand, outputMode]
@@ -115,6 +175,56 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CaseQualityFinding'
+    MammographyExam:
+      type: object
+      required: [studyInstanceUid, modality, standardViews]
+      properties:
+        studyInstanceUid:
+          type: string
+          minLength: 1
+          maxLength: 128
+        modality:
+          type: string
+          const: FFDM
+        standardViews:
+          type: array
+          prefixItems:
+            - const: L-CC
+            - const: L-MLO
+            - const: R-CC
+            - const: R-MLO
+          minItems: 4
+          maxItems: 4
+        patientAge:
+          type: integer
+          minimum: 18
+          maximum: 120
+        breastDensity:
+          type: string
+          enum: [A, B, C, D]
+        accessionNumber:
+          type: string
+          minLength: 1
+          maxLength: 64
+    MammographyClinicalQuestion:
+      type: object
+      required: [questionText, urgency]
+      properties:
+        questionText:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        urgency:
+          type: string
+          enum: [routine, urgent, stat]
+    CreateCaseRequest:
+      type: object
+      required: [exam, clinicalQuestion]
+      properties:
+        exam:
+          $ref: '#/components/schemas/MammographyExam'
+        clinicalQuestion:
+          $ref: '#/components/schemas/MammographyClinicalQuestion'
     DraftGenerationStage:
       type: object
       required: [name, status, latencyMs]
@@ -768,12 +878,26 @@ paths:
       responses:
         '200':
           description: Prometheus metrics output
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: Metrics endpoint is disabled for the current runtime
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricsDisabledResponse'
   /api/v1/manifest:
     get:
       operationId: getManifest
       responses:
         '200':
           description: Machine-readable scope manifest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManifestResponse'
   /api/v1/integration-seams/python-sidecar:
     get:
       operationId: renderPythonSidecarIntegrationSeam
@@ -816,6 +940,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CaseListResponse'
+        '400':
+          description: Invalid pagination query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
         '500':
           description: Unexpected server-side failure during case listing
           content:
@@ -824,6 +954,12 @@ paths:
                 $ref: '#/components/schemas/ErrorEnvelope'
     post:
       operationId: createCase
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCaseRequest'
       responses:
         '201':
           description: Draft mammography case created
@@ -833,6 +969,18 @@ paths:
                 $ref: '#/components/schemas/CaseResponse'
         '400':
           description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: Case intake rate limit exceeded for the current client
+          headers:
+            Retry-After:
+              description: Seconds until the current intake window resets
+              schema:
+                type: integer
+                minimum: 1
           content:
             application/json:
               schema:

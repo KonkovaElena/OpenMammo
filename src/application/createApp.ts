@@ -3,10 +3,12 @@ import express, { type Express, type NextFunction, type Request, type Response }
 import helmet from "helmet";
 import { Counter, type Registry } from "prom-client";
 import { ZodError } from "zod";
+import { CaseIntakeRateLimiter, type CaseIntakeRateLimitConfig } from "./CaseIntakeRateLimiter";
 import { standaloneManifest } from "../domain/manifest";
 import type { StructuredLogger } from "../logging";
 import {
   createMammographyCaseRequestSchema,
+  mammographyCaseListQuerySchema,
   mammographyCaseDeliveryInputSchema,
   mammographyCaseReviewInputSchema,
   mammographyReportSealInputSchema,
@@ -58,6 +60,7 @@ export interface CreateAppOptions {
   startedAt: Date;
   logger: StructuredLogger;
   isShuttingDown: () => boolean;
+  caseIntakeRateLimit?: CaseIntakeRateLimitConfig;
   generateCase: (
     input: CreateMammographyCaseRequest,
   ) => Promise<GenerateMammographySecondOpinionOutput>;
@@ -85,6 +88,9 @@ export interface CreateAppOptions {
 
 export function createApp(options: CreateAppOptions): Express {
   const app = express();
+  const caseIntakeRateLimiter = new CaseIntakeRateLimiter(
+    options.caseIntakeRateLimit ?? { windowMs: 60_000, maxRequests: 0 },
+  );
 
   app.disable("x-powered-by");
 
@@ -193,14 +199,26 @@ export function createApp(options: CreateAppOptions): Express {
 
   app.get("/api/v1/cases", async (request: Request, response: Response) => {
     try {
-      const limitRaw = typeof request.query.limit === "string" ? Number(request.query.limit) : 50;
-      const offsetRaw = typeof request.query.offset === "string" ? Number(request.query.offset) : 0;
-      const limit = Number.isFinite(limitRaw) && limitRaw >= 1 && limitRaw <= 100 ? Math.floor(limitRaw) : 50;
-      const offset = Number.isFinite(offsetRaw) && offsetRaw >= 0 ? Math.floor(offsetRaw) : 0;
+      const listQuery = mammographyCaseListQuerySchema.parse({
+        limit: request.query.limit,
+        offset: request.query.offset,
+      });
 
-      const output = await options.listCases({ limit, offset });
+      const output = await options.listCases(listQuery);
       response.status(200).json(output);
     } catch (error) {
+      if (error instanceof ZodError) {
+        response.status(400).json(
+          buildErrorEnvelope(
+            request,
+            "INVALID_QUERY_PARAMETERS",
+            "Query parameters do not match the case listing contract.",
+            { issues: error.issues },
+          ),
+        );
+        return;
+      }
+
       logRequestFailure(request, options.logger, error);
       response.status(500).json(
         buildErrorEnvelope(
@@ -625,6 +643,35 @@ export function createApp(options: CreateAppOptions): Express {
 
   app.post("/api/v1/cases", async (request: Request, response: Response) => {
     try {
+      const requestContext = getRequestContext(request);
+      const rateLimitDecision = caseIntakeRateLimiter.evaluate(getClientAddress(request));
+
+      if (rateLimitDecision.applied && !rateLimitDecision.allowed) {
+        response.setHeader("Retry-After", String(rateLimitDecision.retryAfterSeconds));
+
+        options.logger.info({
+          event: "http.request.rate_limited",
+          method: request.method,
+          path: request.path,
+          requestId: requestContext.requestId,
+          correlationId: requestContext.correlationId,
+          limit: rateLimitDecision.limit,
+          retryAfterSeconds: rateLimitDecision.retryAfterSeconds,
+        });
+
+        response.status(429).json(
+          buildErrorEnvelope(
+            request,
+            "CASE_INTAKE_RATE_LIMITED",
+            "Case intake rate limit exceeded for this client. Retry after the indicated backoff window.",
+            {
+              retryAfterSeconds: rateLimitDecision.retryAfterSeconds,
+            },
+          ),
+        );
+        return;
+      }
+
       const input = createMammographyCaseRequestSchema.parse(request.body);
       const output = await options.generateCase(input);
 
@@ -709,6 +756,10 @@ function buildErrorEnvelope(
       ...extraFields,
     },
   };
+}
+
+function getClientAddress(request: Request): string {
+  return request.ip || request.socket.remoteAddress || "unknown";
 }
 
 function getOptionalHeader(request: Request, headerName: string): string | undefined {

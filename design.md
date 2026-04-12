@@ -2,7 +2,7 @@
 title: "Mammography Second Opinion Standalone Design"
 status: active
 version: "0.1.0"
-last_updated: "2026-04-05"
+last_updated: "2026-04-12"
 tags: [mammography, ffdm, standalone, control-plane]
 ---
 
@@ -85,6 +85,11 @@ Implemented in the report integrity slice:
 - deterministic integrity verification that re-computes the hash and compares it against the stored seal
 - report-integrity-sealed lifecycle event persisted in the case event history
 - idempotency guard that rejects double-sealing with a 409 conflict response
+
+Implemented in the case listing slice:
+- paginated case-listing route for lightweight workflow overviews without loading full event history
+- summary projection contract that exposes case identity, status, modality, study UID, creation timestamp, and assessment summary
+- file-backed and in-memory repository support for listing all persisted cases across runtime restarts
 
 Not implemented yet:
 - deeper image QC

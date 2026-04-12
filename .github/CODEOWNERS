@@ -2,6 +2,7 @@
 * @KonkovaElena
 
 # CI/CD and supply-chain
+.github/CODEOWNERS @KonkovaElena
 .github/ @KonkovaElena
 
 # Domain and contracts require explicit review

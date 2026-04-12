@@ -1,6 +1,7 @@
 import type { Registry } from "prom-client";
 import type { Express } from "express";
 import { createApp } from "./application/createApp";
+import type { CaseIntakeRateLimitConfig } from "./application/CaseIntakeRateLimiter";
 import { DeliverMammographyCaseReportUseCase } from "./application/usecases/DeliverMammographyCaseReportUseCase";
 import { FinalizeMammographySecondOpinionReviewUseCase } from "./application/usecases/FinalizeMammographySecondOpinionReviewUseCase";
 import { RenderDicomwebArchiveSeamUseCase } from "./application/usecases/RenderDicomwebArchiveSeamUseCase";
@@ -32,6 +33,7 @@ export interface BootstrapOptions {
   logger?: StructuredLogger;
   startedAt?: Date;
   caseStorePath?: string;
+  caseIntakeRateLimit?: CaseIntakeRateLimitConfig;
   orthancBaseUrl?: string;
   dicomwebSourceName?: string;
   pythonSidecarBaseUrl?: string;
@@ -89,6 +91,7 @@ export function bootstrap(options: BootstrapOptions = {}): BootstrapResult {
     startedAt,
     logger,
     isShuttingDown: options.isShuttingDown ?? (() => false),
+    caseIntakeRateLimit: options.caseIntakeRateLimit,
     generateCase: (input) => generateCaseUseCase.execute(input),
     getCaseById: (caseId) => getCaseUseCase.execute(caseId),
     getCaseEventsById: (caseId) => getCaseEventsUseCase.execute(caseId),

@@ -203,6 +203,17 @@ export const mammographyReportSealInputSchema = z.object({
   sealedBy: z.string().min(1).max(200),
 });
 
+export const mammographyCaseListQuerySchema = z.object({
+  limit: z.preprocess(
+    (value) => coerceNumericQueryParameter(value, 50),
+    z.number().int().min(1).max(100),
+  ),
+  offset: z.preprocess(
+    (value) => coerceNumericQueryParameter(value, 0),
+    z.number().int().min(0),
+  ),
+});
+
 export type MammographyExam = z.infer<typeof mammographyExamSchema>;
 export type MammographyClinicalQuestion = z.infer<typeof mammographyClinicalQuestionSchema>;
 export type MammographyDraftAssessment = z.infer<typeof mammographyDraftAssessmentSchema>;
@@ -219,3 +230,21 @@ export type MammographyCaseLifecycleEvent = z.infer<typeof mammographyCaseLifecy
 export type MammographyReportIntegritySeal = z.infer<typeof mammographyReportIntegritySealSchema>;
 export type MammographySecondOpinionCaseSnapshot = z.infer<typeof mammographySecondOpinionCaseSnapshotSchema>;
 export type CreateMammographyCaseRequest = z.infer<typeof createMammographyCaseRequestSchema>;
+
+function coerceNumericQueryParameter(value: unknown, defaultValue: number): unknown {
+  if (typeof value === "undefined") {
+    return defaultValue;
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.trim();
+
+    if (normalized.length === 0) {
+      return Number.NaN;
+    }
+
+    return Number(normalized);
+  }
+
+  return value;
+}

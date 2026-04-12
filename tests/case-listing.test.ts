@@ -144,7 +144,7 @@ test("GET /api/v1/cases applies limit and offset pagination", async () => {
   );
 });
 
-test("GET /api/v1/cases falls back to default pagination for invalid query values", async () => {
+test("GET /api/v1/cases rejects invalid query values with 400", async () => {
   const { app } = bootstrap({
     metricsEnabled: false,
     isShuttingDown: () => false,
@@ -161,11 +161,10 @@ test("GET /api/v1/cases falls back to default pagination for invalid query value
     .get("/api/v1/cases?limit=bad&offset=-5")
     .set("x-request-id", "req-list-invalid-001");
 
-  assert.equal(response.status, 200);
-  assert.equal(response.body.total, 1);
-  assert.equal(response.body.limit, 50);
-  assert.equal(response.body.offset, 0);
-  assert.equal(response.body.cases.length, 1);
+  assert.equal(response.status, 400);
+  assert.equal(response.body.error.code, "INVALID_QUERY_PARAMETERS");
+  assert.equal(response.body.error.requestId, "req-list-invalid-001");
+  assert.ok(Array.isArray(response.body.error.issues));
 });
 
 test("GET /api/v1/cases returns persisted summaries after a bootstrap restart", async () => {

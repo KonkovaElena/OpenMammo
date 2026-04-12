@@ -104,3 +104,86 @@ test("internal errors return request-aware envelopes and emit failure logs", asy
   assert.equal(failureLog?.path, "/api/v1/cases");
   assert.equal(failureLog?.errorName, "Error");
 });
+
+test("case intake rate limiting returns a request-aware 429 with Retry-After", async () => {
+  const { metricsRegistry, requestCounter } = createMonitoring();
+  const logEntries: Array<Record<string, unknown>> = [];
+
+  const app = createApp({
+    metricsEnabled: false,
+    metricsRegistry,
+    requestCounter,
+    isShuttingDown: () => false,
+    startedAt: new Date("2026-04-05T00:00:00.000Z"),
+    caseIntakeRateLimit: {
+      windowMs: 60_000,
+      maxRequests: 1,
+    },
+    logger: {
+      info(entry) {
+        logEntries.push(entry);
+      },
+      error(entry) {
+        logEntries.push(entry);
+      },
+    },
+    generateCase: async () => ({
+      caseId: "9cb39adf-3f3b-4fd0-8f33-0a5dfd940001",
+      status: "AwaitingReview",
+      assessment: {
+        biradsCategory: "0",
+        summary: "Baseline draft",
+        confidenceBand: "moderate",
+        outputMode: "draft-only",
+        findings: ["Four standard views are present."],
+        recommendations: ["Radiologist review is required."],
+      },
+      qc: {
+        status: "pass",
+        findingCount: 0,
+        findings: [],
+      },
+      generation: {
+        orchestratorId: "baseline-draft-orchestrator:v1",
+        modelId: "baseline-rule-engine:v0",
+        totalLatencyMs: 0,
+        stages: [
+          { name: "exam-qc", status: "completed", latencyMs: 0 },
+          { name: "draft-generation", status: "completed", latencyMs: 0 },
+          { name: "safety-evaluation", status: "completed", latencyMs: 0 },
+        ],
+      },
+      review: null,
+      delivery: null,
+      safety: {
+        flagCount: 0,
+        hasBlockingFlags: false,
+      },
+    }),
+  });
+
+  const firstResponse = await request(app)
+    .post("/api/v1/cases")
+    .set("x-request-id", "req-rate-limit-001")
+    .send(validCaseRequest);
+
+  assert.equal(firstResponse.status, 201);
+
+  const secondResponse = await request(app)
+    .post("/api/v1/cases")
+    .set("x-request-id", "req-rate-limit-002")
+    .send(validCaseRequest);
+
+  assert.equal(secondResponse.status, 429);
+  assert.equal(secondResponse.body.error.code, "CASE_INTAKE_RATE_LIMITED");
+  assert.equal(secondResponse.body.error.requestId, "req-rate-limit-002");
+  assert.equal(secondResponse.body.error.correlationId, "req-rate-limit-002");
+  assert.equal(secondResponse.headers["retry-after"], "60");
+  assert.equal(secondResponse.body.error.retryAfterSeconds, 60);
+
+  const rateLimitLog = logEntries.find((entry) => entry.event === "http.request.rate_limited");
+  assert.ok(rateLimitLog);
+  assert.equal(rateLimitLog?.path, "/api/v1/cases");
+  assert.equal(rateLimitLog?.requestId, "req-rate-limit-002");
+  assert.equal(rateLimitLog?.limit, 1);
+});

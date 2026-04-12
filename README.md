@@ -16,13 +16,16 @@ This standalone is intentionally narrow. The first implemented wave is a bootabl
 - clinician review and finalization workflow with persisted reviewer decision
 - finalized report rendering route for clinician-approved cases
 - downloadable text export for finalized clinician reports
+- SHA-256 report sealing and integrity verification for finalized reports
 - delivery tracking for finalized reports with persisted delivery metadata
 - OHIF-compatible review seam as a launch manifest with StudyInstanceUID handoff
 - Orthanc and DICOMweb-compatible archive seam with env-backed roots
 - Node-to-sidecar integration seam with optional live health and capability probe
 - separate Python imaging sidecar scaffold for future compute workloads
 - file-backed persistence seam for draft case retrieval
-- typed lifecycle event history for submitted, QC-evaluated, drafted, safety-evaluated, orchestrated, and finalized cases
+- paginated case-listing workflow for lightweight operator overviews
+- typed lifecycle event history for submitted, QC-evaluated, drafted, safety-evaluated, orchestrated, finalized, delivered, and report-sealed cases
+- per-IP staging-grade case-intake rate limiting with request-aware `429` responses and `Retry-After`
 - request correlation headers
 - structured request logging for completed and failed requests
 - request-aware error envelopes for invalid and unexpected intake or retrieval failures
@@ -85,6 +88,12 @@ npm run sbom:cyclonedx:file
 
 The repository now includes a dedicated provenance workflow at `.github/workflows/supply-chain-provenance.yml`. It builds the standalone bundle, writes a normalized CycloneDX SBOM JSON file, uploads the bundle/SBOM/checksums as artifacts, and uses `actions/attest@v4` for build provenance and SBOM attestations.
 
+Workflow security posture:
+
+- GitHub Actions are pinned to full commit SHAs with inline version comments for Dependabot-friendly updates
+- checkout steps disable persisted Git credentials for read-only CI jobs
+- `.github/workflows/*` changes are owned through `.github/CODEOWNERS`
+
 ## Implemented Routes
 
 - GET /healthz
@@ -92,17 +101,20 @@ The repository now includes a dedicated provenance workflow at `.github/workflow
 - GET /metrics
 - GET /api/v1/manifest
 - GET /api/v1/integration-seams/python-sidecar
+- GET /api/v1/cases
 - POST /api/v1/cases
 - POST /api/v1/cases/:caseId/review
 - GET /api/v1/cases/:caseId/report
 - GET /api/v1/cases/:caseId/report/export
+- POST /api/v1/cases/:caseId/report/seal
+- GET /api/v1/cases/:caseId/report/integrity
 - POST /api/v1/cases/:caseId/deliver
 - GET /api/v1/cases/:caseId/review-seams/ohif
 - GET /api/v1/cases/:caseId/archive-seams/dicomweb
 - GET /api/v1/cases/:caseId
 - GET /api/v1/cases/:caseId/events
 
-`/readyz` returns product and runtime status. Retrieval can return `status="Submitted"` with `assessment=null`, `qc=null`, `generation=null`, `review=null`, and `delivery=null` for persisted cases that exist before QC, draft completion, clinician finalization, or tracked delivery. Case responses now include QC, generation, review, and delivery summaries across the workflow. Finalized cases can also render a deterministic text report artifact via `/api/v1/cases/:caseId/report` and download the same artifact as a plain-text attachment via `/api/v1/cases/:caseId/report/export`. Cases at any persisted state can expose an OHIF-compatible launch manifest via `/api/v1/cases/:caseId/review-seams/ohif`, and that manifest switches from placeholder roots to real DICOMweb roots when `ORTHANC_BASE_URL` is configured. The dedicated archive seam at `/api/v1/cases/:caseId/archive-seams/dicomweb` exposes the same Orthanc-compatible handoff contract directly. The global seam `/api/v1/integration-seams/python-sidecar` probes the current FastAPI sidecar scaffold when `PYTHON_SIDECAR_BASE_URL` is configured, but it does not claim that imaging inference jobs are implemented yet. Error responses for case intake, case retrieval, case review finalization, case report rendering, case report export, case delivery tracking, OHIF seam rendering, DICOMweb archive seam rendering, and case event retrieval include request and correlation identifiers to simplify operator debugging.
+`/readyz` returns product and runtime status. `GET /api/v1/cases` returns paginated workflow summaries and rejects invalid `limit` or `offset` values with a request-aware 400 response. Retrieval can return `status="Submitted"` with `assessment=null`, `qc=null`, `generation=null`, `review=null`, and `delivery=null` for persisted cases that exist before QC, draft completion, clinician finalization, or tracked delivery. Case responses now include QC, generation, review, and delivery summaries across the workflow. Finalized cases can also render a deterministic text report artifact via `/api/v1/cases/:caseId/report`, download the same artifact as a plain-text attachment via `/api/v1/cases/:caseId/report/export`, create a SHA-256 provenance seal via `/api/v1/cases/:caseId/report/seal`, and verify that seal via `/api/v1/cases/:caseId/report/integrity`. Cases at any persisted state can expose an OHIF-compatible launch manifest via `/api/v1/cases/:caseId/review-seams/ohif`, and that manifest switches from placeholder roots to real DICOMweb roots when `ORTHANC_BASE_URL` is configured. The dedicated archive seam at `/api/v1/cases/:caseId/archive-seams/dicomweb` exposes the same Orthanc-compatible handoff contract directly. The global seam `/api/v1/integration-seams/python-sidecar` probes the current FastAPI sidecar scaffold when `PYTHON_SIDECAR_BASE_URL` is configured, but it does not claim that imaging inference jobs are implemented yet. Error responses for case intake, case listing, case retrieval, case review finalization, case report rendering, case report export, case report sealing, case report integrity verification, case delivery tracking, OHIF seam rendering, DICOMweb archive seam rendering, and case event retrieval include request and correlation identifiers to simplify operator debugging. The intake route can also return a request-aware `429` with `Retry-After` when the per-IP staging limiter is exceeded.
 
 ## Python Sidecar Scaffold
 
@@ -122,8 +134,9 @@ The repository now ships a minimal public-export governance layer:
 - `CONTRIBUTING.md`
 - `SECURITY.md`
 - `CODE_OF_CONDUCT.md`
+- `.github/CODEOWNERS` for workflow-review ownership
 - GitHub issue templates and pull request template
-- Dependabot, CodeQL, and dependency-review workflows
+- Dependabot, CodeQL, dependency-review, and Scorecards workflows
 
 ## Safety Posture
 
