@@ -153,6 +153,8 @@ This repository is not a diagnostic device. Any future model outputs are intende
 
 The current standalone safety boundary is also captured as explicit invariant statements in [docs/verification/safety-invariants.md](docs/verification/safety-invariants.md).
 
+The initial risk-management and proof-chain surfaces now also live in [docs/verification/hazard-analysis.md](docs/verification/hazard-analysis.md) and [docs/verification/traceability-matrix.md](docs/verification/traceability-matrix.md).
+
 ## Authority Docs
 
 - design.md
@@ -163,5 +165,7 @@ The current standalone safety boundary is also captured as explicit invariant st
 - docs/env-contract.md
 - docs/verification/release-validation-packet.md
 - docs/verification/launch-evidence-index.md
+- docs/verification/hazard-analysis.md
+- docs/verification/traceability-matrix.md
 - docs/verification/safety-invariants.md
 - docs/verification/hosted-evidence-capture-template.md

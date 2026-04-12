@@ -25,11 +25,18 @@ The goal is not to claim medical-device completeness. The goal is to make the cu
 
 ## Recommended Next Expansion
 
-If the standalone continues to grow toward real clinical deployment, the next useful layer is a traceability matrix that maps:
+The next useful layer is now present as initial repository artifacts:
+
+- `docs/verification/hazard-analysis.md`
+- `docs/verification/traceability-matrix.md`
+
+Further growth should keep extending those files rather than re-introducing purely narrative safety claims.
+
+If the standalone continues to grow toward real clinical deployment, the next useful expansion is a maintained risk register that maps:
 
 1. requirement or hazard
 2. invariant or control
 3. code surface
 4. automated test or evidence artifact
 
-This document is the smallest current step in that direction.
+This document remains the smallest current control-oriented layer in that chain.

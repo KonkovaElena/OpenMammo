@@ -43,5 +43,7 @@ The hosted-CI closure problem is resolved for the latest public head. The primar
 - `docs/env-contract.md`
 - `docs/verification/release-validation-packet.md`
 - `docs/verification/launch-evidence-index.md`
+- `docs/verification/hazard-analysis.md`
+- `docs/verification/traceability-matrix.md`
 - `docs/verification/safety-invariants.md`
 - `docs/verification/hosted-evidence-capture-template.md`

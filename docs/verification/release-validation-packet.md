@@ -90,6 +90,8 @@ Authority docs for this validation snapshot:
 - `docs/bootstrap-map.md`
 - `docs/env-contract.md`
 - `docs/verification/release-validation-packet.md`
+- `docs/verification/hazard-analysis.md`
+- `docs/verification/traceability-matrix.md`
 - `docs/verification/safety-invariants.md`
 
 ## Validation Completeness Matrix
@@ -106,6 +108,7 @@ Authority docs for this validation snapshot:
 | Case listing | 5 listing tests, 5 pass | Complete |
 | SQLite persistence seam | 2 sqlite persistence tests, 2 pass | Complete |
 | Safety invariants | 4 invariant tests, 4 pass | Complete |
+| Hazard and traceability surfaces | initial hazard analysis and traceability matrix committed | Complete |
 | Scope honesty | manifest and authority docs align on FFDM-only clinician-in-the-loop posture | Complete |
 
 ## Known Gaps
