@@ -13,7 +13,7 @@ It exists to keep the public-export story honest: README and authority docs shou
 | Dimension | Value |
 |-----------|-------|
 | Repository | mammography-second-opinion |
-| Repository validation base | pushed head `14abeb9ae7b9f80635e45853bf10a2bbbf4406e2` |
+| Repository validation base | pushed head `443a44406dcad76672b6d8fefd5051e2a571e4a8` |
 | Node.js target | 24+ |
 | TypeScript target | 6.x |
 | Primary validation command | `npm run validate:public-export` |
@@ -25,8 +25,8 @@ It exists to keep the public-export story honest: README and authority docs shou
 
 | Metric | Value |
 |--------|-------|
-| Total node tests | 58 |
-| Passing | 58 |
+| Total node tests | 59 |
+| Passing | 59 |
 | Failing | 0 |
 | Skipped | 0 |
 | Duration | ~1.35 s |
@@ -76,7 +76,7 @@ On 2026-04-09 the standalone also passed a fresh local install path that mirrors
 - `npm test` succeeded
 - `npm run smoke:health` succeeded
 
-This matters because the latest public workflow evidence for the current head now matches the local validation story: the hosted `standalone-ci`, `Scorecards`, `CodeQL`, and `Supply Chain Provenance` lanes are all green on the same public head.
+This matters because the current public head now contains an additional audit-trail improvement. The latest local validation already covers that head, while the latest fully visible hosted-green workflow snapshot still belongs to the immediately preceding head `14abeb9ae7b9f80635e45853bf10a2bbbf4406e2`.
 
 ## Documentation Inventory
 
@@ -107,6 +107,7 @@ Authority docs for this validation snapshot:
 | Report integrity sealing | 11 seal/integrity tests, 11 pass | Complete |
 | Case listing | 5 listing tests, 5 pass | Complete |
 | SQLite persistence seam | 2 sqlite persistence tests, 2 pass | Complete |
+| Lifecycle event audit context | actor/request audit metadata captured in create, review, delivery, and seal flows | Complete |
 | Safety invariants | 4 invariant tests, 4 pass | Complete |
 | Hazard and traceability surfaces | initial hazard analysis and traceability matrix committed | Complete |
 | Scope honesty | manifest and authority docs align on FFDM-only clinician-in-the-loop posture | Complete |
@@ -116,11 +117,12 @@ Authority docs for this validation snapshot:
 1. The Python sidecar is still a scaffold, not a live inference runtime.
 2. The standalone does not yet prove final multi-instance production persistence.
 3. Archive and OHIF seams are compatibility surfaces, not a full DICOM ingest or PACS closure.
-4. The hosted green state is currently demonstrated for one repository head, not yet as a multi-run stability trend across time.
-5. Dependency Review remains noisy on several Dependabot PRs, so supply-chain governance outside `main` still needs separate cleanup.
+4. Hosted workflow capture for the current public head `443a44406dcad76672b6d8fefd5051e2a571e4a8` is still pending in the public GitHub Actions snapshot available to this audit pass.
+5. The latest fully hosted-green snapshot is still `14abeb9ae7b9f80635e45853bf10a2bbbf4406e2`, so cross-head hosted stability is not yet proved.
+6. Dependency Review remains noisy on several Dependabot PRs, so supply-chain governance outside `main` still needs separate cleanup.
 
 ## Interpretation
 
 The current standalone is locally verified as a truthful public export.
 
-It boots, builds, passes its node:test suite, passes a runtime health smoke, proves the separate Python sidecar scaffold contract, and now also proves an opt-in SQLite persistence path across runtime restarts. The same public head also has green hosted `standalone-ci`, `Scorecards`, `CodeQL`, and `Supply Chain Provenance` runs. The remaining gaps are therefore primarily product-depth gaps: live imaging inference, deeper archive closure, and multi-instance production persistence.
+It boots, builds, passes its node:test suite, passes a runtime health smoke, proves the separate Python sidecar scaffold contract, proves an opt-in SQLite persistence path across runtime restarts, and now also captures optional actor/request audit context inside lifecycle events. The latest fully hosted-green workflow set still belongs to the immediately preceding head, while hosted capture for the current head is pending. The remaining gaps are therefore split between evidence timing gaps and product-depth gaps: live imaging inference, deeper archive closure, multi-instance production persistence, and stronger identity controls.
