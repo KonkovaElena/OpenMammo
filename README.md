@@ -151,7 +151,9 @@ The repository now ships a minimal public-export governance layer:
 - `LICENSE`
 - `CONTRIBUTING.md`
 - `SECURITY.md`
+- `SUPPORT.md`
 - `CODE_OF_CONDUCT.md`
+- `CITATION.cff`
 - `.github/CODEOWNERS` for workflow-review ownership
 - GitHub issue templates and pull request template
 - Dependabot, CodeQL, dependency-review, and Scorecards workflows

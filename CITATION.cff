@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+title: "Mammography Second Opinion"
+message: "If you use Mammography Second Opinion in research or technical evaluation, please cite it using the metadata below."
+type: software
+version: "0.1.0"
+url: "https://github.com/KonkovaElena/OpenMammo"
+repository-code: "https://github.com/KonkovaElena/OpenMammo"
+license: MIT
+authors:
+  - family-names: Konkova
+    given-names: Elena
+abstract: >-
+  Mammography Second Opinion is a clinician-in-the-loop FFDM workflow control
+  plane for case intake, draft generation, clinician review, finalization,
+  report sealing, delivery tracking, and bounded interoperability seams in a
+  research-use-only setting.
+keywords:
+  - mammography
+  - ffdm
+  - breast-imaging
+  - clinician-in-the-loop
+  - second-opinion
+  - research-use-only
