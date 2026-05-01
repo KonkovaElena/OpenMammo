@@ -1,5 +1,7 @@
 # Mammography Second Opinion
 
+English | [Русский](README.ru.md)
+
 Clinician-in-the-loop full-field digital mammography control plane.
 
 This standalone is intentionally narrow. The first implemented wave is a bootable control-plane kernel for FFDM-only mammography workflows. It exposes health, readiness, metrics, and a machine-readable manifest that declares the product boundary and safety posture.
